@@ -1584,10 +1584,15 @@
     <!-- Confetti Container -->
     <div class="confetti-container" id="confetti-container"></div>
 
-    <!-- Audio for background music -->
-    <audio id="background-music" loop>
-        <source src="https://raw.githubusercontent.com/3dm4rk/gtg/dnn.mp3" type="audio/mpeg">
+    <!-- Audio for background music (Music Dragon) -->
+    <audio id="background-music" loop preload="auto">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
+    </audio>
+
+    <!-- Audio for satisfying victory sound -->
+    <audio id="victory-sound" preload="auto">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-winning-extra-treasure-2068.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Audio for sound effects -->
@@ -1664,7 +1669,10 @@
             petStreakCounter: 0,
             
             // Game flags
-            isSelecting: false
+            isSelecting: false,
+            
+            // Music state
+            musicInitialized: false
         };
 
         // ====== SHOP ITEMS DATABASE ======
@@ -1793,7 +1801,39 @@
             // Setup event listeners
             setupEventListeners();
             updateMusicControls();
+            
+            // Initialize audio context on first user interaction
+            initializeAudio();
         });
+
+        function initializeAudio() {
+            // Create audio context on first user interaction
+            const initAudio = () => {
+                // Try to play a silent sound to unlock audio
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(1, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+                
+                // Remove event listeners
+                document.removeEventListener('click', initAudio);
+                document.removeEventListener('keydown', initAudio);
+                document.removeEventListener('touchstart', initAudio);
+            };
+            
+            // Add event listeners for user interaction
+            document.addEventListener('click', initAudio);
+            document.addEventListener('keydown', initAudio);
+            document.addEventListener('touchstart', initAudio);
+        }
 
         function loadGameState() {
             const savedName = localStorage.getItem('gtgPlayerName');
@@ -1920,6 +1960,9 @@
             gameState.petStreakCounter = 0;
             gameState.isSelecting = false;
             
+            // Stop any playing music
+            stopBackgroundMusic();
+            
             // Update displays
             updateDisplays();
             updateLivesDisplay();
@@ -1974,8 +2017,10 @@
             // Apply pet effects
             updatePetEffects();
             
-            // Start background music if music dragon is equipped AND music is enabled
-            if (gameState.equippedPet === 'music_dragon' && gameState.musicEnabled) {
+            // Start background music if music dragon is equipped
+            if (gameState.equippedPet === 'music_dragon') {
+                gameState.musicEnabled = true;
+                updateMusicControls();
                 startBackgroundMusic();
             }
             
@@ -1992,30 +2037,32 @@
             // Check if already playing
             if (!bgMusic.paused) return;
             
-            // Play with user interaction context
-            const playMusic = () => {
-                bgMusic.play().then(() => {
+            // Play with promise
+            const playPromise = bgMusic.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
                     console.log("Background music started");
                     updateMusicButton(true);
-                }).catch(e => {
-                    console.log("Music play failed:", e);
+                }).catch(error => {
+                    console.log("Music play failed, will retry on interaction:", error);
+                    // Show notification and retry on next interaction
+                    showNotification('Click to enable background music!', 'info');
                     
-                    // Wait for user interaction and retry
                     const retryPlay = () => {
                         bgMusic.play().then(() => {
-                            console.log("Background music started after user interaction");
+                            console.log("Background music started after interaction");
                             updateMusicButton(true);
-                        }).catch(e2 => {
-                            console.log("Music play still failed:", e2);
+                            showNotification('Music started! Enjoy!', 'success');
+                        }).catch(e => {
+                            console.log("Still can't play music:", e);
                         });
                         document.removeEventListener('click', retryPlay);
                     };
                     
                     document.addEventListener('click', retryPlay, { once: true });
                 });
-            };
-            
-            playMusic();
+            }
         }
 
         function stopBackgroundMusic() {
@@ -2225,8 +2272,8 @@
             }
             document.getElementById('instruction').innerHTML = message;
             
-            // Play victory effects
-            playSound('correct');
+            // Play satisfying victory music instead of popup
+            playVictoryMusic();
             playVictoryAnimation();
             
             // Add gold effect
@@ -2235,19 +2282,28 @@
             // Show notification
             showNotification(`Correct! +${goldEarned} Gold`, 'success');
             
-            // Auto-proceed to next level after delay
+            // Auto-proceed to next level after delay (while victory music plays)
             setTimeout(() => {
-                showRewardModal(goldEarned, "Great job! You found the gold!");
-                
-                // Auto-close reward modal and go to next level
-                setTimeout(() => {
-                    document.getElementById('reward-modal').style.display = 'none';
-                    gameState.isSelecting = false;
-                    nextLevel();
-                }, 1500);
-            }, 1000);
+                gameState.isSelecting = false;
+                nextLevel();
+            }, 2000);
             
             saveGameState();
+        }
+
+        function playVictoryMusic() {
+            if (!gameState.soundEnabled) return;
+            
+            try {
+                const victorySound = document.getElementById('victory-sound');
+                if (victorySound) {
+                    victorySound.currentTime = 0;
+                    victorySound.volume = 0.7;
+                    victorySound.play().catch(e => console.log("Victory music play failed:", e));
+                }
+            } catch (e) {
+                console.log("Audio not supported");
+            }
         }
 
         function handleWrongGuess() {
@@ -2448,7 +2504,7 @@
                             showGoldEffect(0, `${pet.name} equipped!`);
                         }, 500);
                         
-                        // If it's Music Dragon, show music controls
+                        // If it's Music Dragon, show music controls and enable music
                         if (pet.id === 'music_dragon') {
                             document.getElementById('music-controls').style.display = 'flex';
                             // Enable music by default when buying Music Dragon
