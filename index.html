@@ -276,13 +276,11 @@
         .btn-hint {
             background: linear-gradient(to right, #51cf66, #40c057);
             color: white;
-            display: none;
         }
         
         .btn-tagna {
             background: linear-gradient(to right, #cc5de8, #be4bdb);
             color: white;
-            display: none;
         }
         
         .btn-shop {
@@ -309,12 +307,26 @@
         
         .game-over {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+        }
+        
+        .game-over-content {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
             padding: 40px;
             border-radius: 15px;
-            margin-top: 30px;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
         }
         
         .game-over h2 {
@@ -1006,40 +1018,6 @@
             transform: scale(0.9) !important;
         }
         
-        /* TICKER STYLES */
-        .ticker {
-            position: relative;
-            width: 100%;
-            height: 40px;
-            background: linear-gradient(90deg, rgba(255,215,0,0.1), rgba(255,215,0,0.3));
-            overflow: hidden;
-            margin-bottom: 20px;
-            border-radius: 10px;
-        }
-        
-        .ticker-content {
-            position: absolute;
-            white-space: nowrap;
-            animation: ticker 30s linear infinite;
-            font-weight: bold;
-            color: #FFD700;
-            display: flex;
-            align-items: center;
-            height: 100%;
-            padding: 0 20px;
-        }
-        
-        @keyframes ticker {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-        
-        .ticker-item {
-            display: inline-block;
-            margin-right: 50px;
-            font-size: 1rem;
-        }
-        
         /* SOUND CONTROL */
         .sound-control {
             position: fixed;
@@ -1080,54 +1058,6 @@
             to { box-shadow: 0 0 25px rgba(204, 93, 232, 0.9); }
         }
         
-        /* PARTICLE EFFECT */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        
-        /* ACHIEVEMENT POPUP */
-        .achievement-popup {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(145deg, #1a1a2e, #16213e);
-            border-radius: 10px;
-            padding: 15px;
-            display: none;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            border-left: 5px solid #FFD700;
-            animation: slideInRight 0.5s, slideOutRight 0.5s 2.5s forwards;
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        
-        .achievement-icon {
-            font-size: 2rem;
-            color: #FFD700;
-        }
-        
-        .achievement-text h4 {
-            color: #FFD700;
-            margin-bottom: 5px;
-        }
-        
         /* SPECIAL OFFER */
         .special-offer {
             background: linear-gradient(145deg, #ff6b6b, #fa5252);
@@ -1158,17 +1088,6 @@
             <h1><i class="fas fa-question-circle"></i> GTG</h1>
             <p class="subtitle">Guess The Gold - Now with Tagna Power-up, Extended Levels & More!</p>
         </header>
-        
-        <div class="ticker">
-            <div class="ticker-content">
-                <span class="ticker-item">🎯 NEW: Levels 101-200 available for 10,000 Gold!</span>
-                <span class="ticker-item">⚡ NEW: Tagna Power-up reduces options by 1!</span>
-                <span class="ticker-item">🎁 Daily Deals refresh every 24 hours!</span>
-                <span class="ticker-item">🔥 Extended gameplay up to 200 levels!</span>
-                <span class="ticker-item">💎 Unlock special themes and icons!</span>
-                <span class="ticker-item">✨ Satisfying sound effects added!</span>
-            </div>
-        </div>
         
         <div class="game-info">
             <div class="info-item">
@@ -1503,30 +1422,18 @@
         </div>
         
         <div class="game-over" id="game-over">
-            <h2>Game Over!</h2>
-            <p>You've run out of lives. Try again to beat your high score!</p>
-            <p>Level Reached: <span id="final-level">0</span>/200</p>
-            <p>Gold Collected: <span id="final-gold">0</span></p>
-            <p>Final Score: <span id="final-score">0</span></p>
-            <p>High Score: <span id="final-high-score">0</span></p>
-            <button class="btn btn-start" id="restart-btn">
-                <i class="fas fa-redo"></i> Play Again
-            </button>
-        </div>
-        
-        <!-- Achievement Popup -->
-        <div class="achievement-popup" id="achievement-popup">
-            <div class="achievement-icon">
-                <i class="fas fa-trophy"></i>
-            </div>
-            <div class="achievement-text">
-                <h4 id="achievement-title">Achievement Unlocked!</h4>
-                <p id="achievement-desc">Description here</p>
+            <div class="game-over-content">
+                <h2>Game Over!</h2>
+                <p>You've run out of lives. Try again to beat your high score!</p>
+                <p>Level Reached: <span id="final-level">0</span>/200</p>
+                <p>Gold Collected: <span id="final-gold">0</span></p>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <p>High Score: <span id="final-high-score">0</span></p>
+                <button class="btn btn-start" id="restart-btn">
+                    <i class="fas fa-redo"></i> Play Again
+                </button>
             </div>
         </div>
-        
-        <!-- Particles Container -->
-        <div class="particles" id="particles"></div>
         
         <footer>
             <p>GTG - Guess The Gold &copy; 2023 | Now with Extended Levels, Tagna Power-up & Satisfying Sounds!</p>
@@ -1574,9 +1481,6 @@
             
             // Mystery boxes
             mysteryBoxesOpened: parseInt(localStorage.getItem('gtgMysteryBoxesOpened')) || 0,
-            
-            // Achievements
-            achievements: JSON.parse(localStorage.getItem('gtgAchievements')) || [],
             
             // Sound
             soundEnabled: localStorage.getItem('gtgSoundEnabled') !== 'false',
@@ -1708,9 +1612,6 @@
                 
                 // Streak sound
                 this.sounds.streak = this.createTone([523.25, 659.25, 783.99, 1046.5], [0.1, 0.1, 0.1, 0.2], 'sine');
-                
-                // Achievement sound
-                this.sounds.achievement = this.createTone([1046.5, 1318.51, 1567.98], [0.2, 0.2, 0.3], 'square');
             }
             
             createTone(frequencies, durations, type) {
@@ -1811,11 +1712,7 @@
         const rewardMessage = document.getElementById('reward-message');
         const rewardIcon = document.getElementById('reward-icon');
         const closeRewardBtn = document.getElementById('close-reward-btn');
-        const achievementPopup = document.getElementById('achievement-popup');
-        const achievementTitle = document.getElementById('achievement-title');
-        const achievementDesc = document.getElementById('achievement-desc');
         const soundToggle = document.getElementById('sound-toggle');
-        const particlesContainer = document.getElementById('particles');
         
         // Power-up buttons
         const hintBtn = document.getElementById('hint-btn');
@@ -1845,8 +1742,10 @@
             gameState.goldPosition = -1;
             gameState.revealedOptions = [];
             
-            // Generate daily deals
-            generateDailyDeals();
+            // Generate daily deals if needed
+            if (!gameState.dailyDeals) {
+                generateDailyDeals();
+            }
             
             updateDisplays();
             updateLivesDisplay();
@@ -1859,7 +1758,6 @@
             hintModal.style.display = 'none';
             rewardModal.style.display = 'none';
             gameOverScreen.style.display = 'none';
-            achievementPopup.style.display = 'none';
             levelProgressBar.style.width = '0%';
             startBtn.disabled = false;
             
@@ -1935,7 +1833,6 @@
             
             if (gameState.level > 1) {
                 soundSystem.playSound('levelup');
-                createParticles(50);
             }
             
             // Auto-skip if purchased
@@ -2054,10 +1951,6 @@
                 
                 soundSystem.playSound('correct');
                 soundSystem.playSound('gold');
-                createParticles(30);
-                
-                // Check for achievements
-                checkAchievements();
                 
                 // Show next level button after a delay
                 setTimeout(() => {
@@ -2158,7 +2051,6 @@
                 instruction.style.color = '#cc5de8';
                 
                 soundSystem.playSound('tagna');
-                createParticles(20, '#cc5de8');
                 
                 // Remove the effect after 3 seconds
                 setTimeout(() => {
@@ -2231,7 +2123,6 @@
             instruction.style.color = '#ff6b6b';
             
             soundSystem.playSound('purchase');
-            createParticles(15, '#ff6b6b');
             
             updateDisplays();
             updateShopGold();
@@ -2254,7 +2145,6 @@
             instruction.style.color = '#FFD700';
             
             soundSystem.playSound('purchase');
-            createParticles(25, '#FFD700');
             
             updateDisplays();
             updateShopGold();
@@ -2317,7 +2207,6 @@
             if (gameState.score > gameState.highScore) {
                 gameState.highScore = gameState.score;
                 localStorage.setItem('gtgHighScore', gameState.highScore);
-                showAchievement('New High Score!', `You set a new high score of ${gameState.score}!`);
             }
             
             finalScore.textContent = gameState.score;
@@ -2325,7 +2214,7 @@
             finalLevel.textContent = gameState.level;
             finalGold.textContent = gameState.gold;
             
-            gameOverScreen.style.display = 'block';
+            gameOverScreen.style.display = 'flex';
             instruction.textContent = "Game Over! You ran out of lives.";
             
             soundSystem.playSound('gameover');
@@ -2349,37 +2238,39 @@
             
             // Create completion screen
             gameOverScreen.innerHTML = `
-                <h2>Victory!</h2>
-                <p>You've completed all 200 levels and found all the gold!</p>
-                <p>Gold Collected: <span id="final-gold">${gameState.gold}</span></p>
-                <p>Final Score: <span id="final-score">${gameState.score}</span></p>
-                <p>High Score: <span id="final-high-score">${gameState.highScore}</span></p>
-                <button class="btn btn-start" id="restart-btn">
-                    <i class="fas fa-redo"></i> Play Again
-                </button>
+                <div class="game-over-content">
+                    <h2>Victory!</h2>
+                    <p>You've completed all 200 levels and found all the gold!</p>
+                    <p>Gold Collected: <span id="final-gold">${gameState.gold}</span></p>
+                    <p>Final Score: <span id="final-score">${gameState.score}</span></p>
+                    <p>High Score: <span id="final-high-score">${gameState.highScore}</span></p>
+                    <button class="btn btn-start" id="restart-btn">
+                        <i class="fas fa-redo"></i> Play Again
+                    </button>
+                </div>
             `;
             
-            gameOverScreen.style.display = 'block';
+            gameOverScreen.style.display = 'flex';
             levelProgressBar.style.width = '100%';
             
             // Reattach restart button event listener
-            document.getElementById('restart-btn').addEventListener('click', initGame);
-            
-            showAchievement('Ultimate Champion!', 'You completed all 200 levels!');
-            soundSystem.playSound('achievement');
-            createParticles(100);
+            setTimeout(() => {
+                document.getElementById('restart-btn').addEventListener('click', initGame);
+            }, 100);
             
             updateDisplays();
         }
         
-        // SHOP FUNCTIONS (from previous code, with additions for new features)
+        // SHOP FUNCTIONS - FIXED VERSION
         function generateDailyDeals() {
             const today = new Date().toDateString();
             
+            // If we already have deals for today, use them
             if (gameState.dailyDealsDate === today && gameState.dailyDeals) {
                 return gameState.dailyDeals;
             }
             
+            // Generate new daily deals
             const deals = [];
             const dealTypes = [
                 { type: 'hint', icon: 'fas fa-lightbulb', basePrice: 2 },
@@ -2443,7 +2334,7 @@
                         <i class="fas fa-coins"></i> ${theme.cost} Gold
                     </div>
                     <button class="shop-item-action ${isEquipped ? 'equipped' : isPurchased ? 'equip' : ''}" 
-                            onclick="${isPurchased ? `equipTheme('${theme.id}')` : `buyItem('theme', '${theme.id}')`}"
+                            onclick="handleThemeAction('${theme.id}')"
                             ${!isPurchased && gameState.gold < theme.cost ? 'disabled' : ''}>
                         ${isEquipped ? 'Equipped' : isPurchased ? 'Equip' : 'Buy'}
                     </button>
@@ -2468,7 +2359,7 @@
                         <i class="fas fa-coins"></i> ${icon.cost} Gold
                     </div>
                     <button class="shop-item-action ${isEquipped ? 'equipped' : isPurchased ? 'equip' : ''}" 
-                            onclick="${isPurchased ? `equipIcon('${icon.id}')` : `buyItem('icon', '${icon.id}')`}"
+                            onclick="handleIconAction('${icon.id}')"
                             ${!isPurchased && gameState.gold < icon.cost ? 'disabled' : ''}>
                         ${isEquipped ? 'Equipped' : isPurchased ? 'Equip' : 'Buy'}
                     </button>
@@ -2479,6 +2370,116 @@
             updateShopGold();
         }
         
+        // Handle theme actions (buy or equip)
+        function handleThemeAction(themeId) {
+            const theme = shopItems.themes.find(t => t.id === themeId);
+            if (!theme) return;
+            
+            const isPurchased = gameState.purchasedItems.includes(themeId) || theme.cost === 0;
+            
+            if (isPurchased) {
+                equipTheme(themeId);
+            } else {
+                buyTheme(themeId);
+            }
+        }
+        
+        // Handle icon actions (buy or equip)
+        function handleIconAction(iconId) {
+            const icon = shopItems.icons.find(i => i.id === iconId);
+            if (!icon) return;
+            
+            const isPurchased = gameState.purchasedItems.includes(iconId) || icon.cost === 0;
+            
+            if (isPurchased) {
+                equipIcon(iconId);
+            } else {
+                buyIcon(iconId);
+            }
+        }
+        
+        // Buy theme
+        function buyTheme(themeId) {
+            const theme = shopItems.themes.find(t => t.id === themeId);
+            if (!theme) return;
+            
+            if (gameState.gold >= theme.cost) {
+                gameState.gold -= theme.cost;
+                gameState.purchasedItems.push(themeId);
+                
+                // Save to localStorage
+                localStorage.setItem('gtgPurchasedItems', JSON.stringify(gameState.purchasedItems));
+                
+                updateDisplays();
+                loadShopItems();
+                
+                // Auto-equip the theme
+                equipTheme(themeId);
+                
+                instruction.textContent = `You bought the ${theme.name} theme!`;
+                instruction.style.color = '#FFD700';
+                
+                soundSystem.playSound('purchase');
+            } else {
+                instruction.textContent = `Not enough gold for ${theme.name}! You need ${theme.cost} gold.`;
+                instruction.style.color = '#ff6b6b';
+            }
+        }
+        
+        // Buy icon
+        function buyIcon(iconId) {
+            const icon = shopItems.icons.find(i => i.id === iconId);
+            if (!icon) return;
+            
+            if (gameState.gold >= icon.cost) {
+                gameState.gold -= icon.cost;
+                gameState.purchasedItems.push(iconId);
+                
+                // Save to localStorage
+                localStorage.setItem('gtgPurchasedItems', JSON.stringify(gameState.purchasedItems));
+                
+                updateDisplays();
+                loadShopItems();
+                
+                // Auto-equip the icon
+                equipIcon(iconId);
+                
+                instruction.textContent = `You bought the ${icon.name} icon!`;
+                instruction.style.color = '#FFD700';
+                
+                soundSystem.playSound('purchase');
+            } else {
+                instruction.textContent = `Not enough gold for ${icon.name}! You need ${icon.cost} gold.`;
+                instruction.style.color = '#ff6b6b';
+            }
+        }
+        
+        // Equip theme
+        function equipTheme(themeId) {
+            gameState.equippedTheme = themeId;
+            localStorage.setItem('gtgEquippedTheme', themeId);
+            applyTheme(themeId);
+            loadShopItems();
+            instruction.textContent = `Equipped ${shopItems.themes.find(t => t.id === themeId).name} theme!`;
+            instruction.style.color = '#FFD700';
+        }
+        
+        // Apply theme to game
+        function applyTheme(themeId) {
+            const theme = shopItems.themes.find(t => t.id === themeId) || shopItems.themes[0];
+            document.body.style.background = `linear-gradient(135deg, #0a0a0a 0%, ${theme.color} 100%)`;
+        }
+        
+        // Equip icon
+        function equipIcon(iconId) {
+            gameState.equippedIcon = iconId;
+            localStorage.setItem('gtgEquippedIcon', iconId);
+            loadShopItems();
+            instruction.textContent = `Equipped ${shopItems.icons.find(i => i.id === iconId).name} icon!`;
+            instruction.style.color = '#FFD700';
+        }
+        
+        // Update daily deals display
         function updateDailyDeals() {
             dailyDealsContainer.innerHTML = '';
             
@@ -2515,6 +2516,53 @@
             });
         }
         
+        // Buy daily deal
+        function buyDailyDeal(dealId) {
+            const deal = gameState.dailyDeals.find(d => d.id === dealId);
+            if (!deal) return;
+            
+            if (gameState.gold >= deal.salePrice) {
+                gameState.gold -= deal.salePrice;
+                deal.sold++;
+                gameState.purchasedDeals.push(dealId);
+                
+                // Apply the deal reward
+                switch (deal.type) {
+                    case 'hint':
+                        instruction.textContent = `You bought ${deal.quantity} hints!`;
+                        // Hints are already available through the hint button
+                        break;
+                    case 'life':
+                        gameState.lives = Math.min(gameState.maxLives, gameState.lives + deal.quantity);
+                        instruction.textContent = `You bought ${deal.quantity} extra ${deal.quantity === 1 ? 'life' : 'lives'}!`;
+                        updateLivesDisplay();
+                        break;
+                    case 'tagna':
+                        gameState.tagnaCharges += deal.quantity;
+                        localStorage.setItem('gtgTagnaCharges', gameState.tagnaCharges);
+                        instruction.textContent = `You bought ${deal.quantity} Tagna charges!`;
+                        break;
+                    case 'gold':
+                        gameState.gold += deal.quantity;
+                        instruction.textContent = `You bought ${deal.quantity} bonus gold!`;
+                        break;
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('gtgDailyDeals', JSON.stringify(gameState.dailyDeals));
+                localStorage.setItem('gtgPurchasedDeals', JSON.stringify(gameState.purchasedDeals));
+                
+                updateDisplays();
+                updateDailyDeals();
+                instruction.style.color = '#FFD700';
+                
+                soundSystem.playSound('purchase');
+            } else {
+                instruction.textContent = `Not enough gold for this deal! You need ${deal.salePrice} gold.`;
+                instruction.style.color = '#ff6b6b';
+            }
+        }
+        
         // Buy level extension (101-200)
         function buyLevelExtension() {
             if (gameState.gold < 10000) {
@@ -2531,8 +2579,6 @@
             instruction.style.color = '#FFD700';
             
             soundSystem.playSound('purchase');
-            createParticles(50, '#FFD700');
-            showAchievement('Level Extended!', 'You unlocked levels 101-200!');
             
             updateDisplays();
             updateShopGold();
@@ -2599,74 +2645,56 @@
             updateShopGold();
         }
         
-        // Check for achievements
-        function checkAchievements() {
-            // Gold collector achievement
-            if (gameState.totalGoldEarned >= 1000 && !gameState.achievements.includes('gold_collector')) {
-                showAchievement('Gold Collector!', 'You collected 1,000 total gold!');
-                gameState.achievements.push('gold_collector');
-                localStorage.setItem('gtgAchievements', JSON.stringify(gameState.achievements));
-            }
+        // Buy mystery box
+        function buyMysteryBox(type) {
+            const box = mysteryBoxes[type];
+            if (!box) return;
             
-            // Streak master achievement
-            if (gameState.streak >= 10 && !gameState.achievements.includes('streak_master')) {
-                showAchievement('Streak Master!', 'You reached a 10x streak!');
-                gameState.achievements.push('streak_master');
-                localStorage.setItem('gtgAchievements', JSON.stringify(gameState.achievements));
-            }
-            
-            // Level 50 achievement
-            if (gameState.level >= 50 && !gameState.achievements.includes('level_50')) {
-                showAchievement('Halfway There!', 'You reached level 50!');
-                gameState.achievements.push('level_50');
-                localStorage.setItem('gtgAchievements', JSON.stringify(gameState.achievements));
+            if (gameState.gold >= box.cost) {
+                gameState.gold -= box.cost;
+                gameState.mysteryBoxesOpened++;
+                
+                // Calculate reward
+                let reward;
+                if (type === 'legendary' && Math.random() < box.jackpotChance) {
+                    // Jackpot!
+                    reward = box.minReward * box.jackpotMultiplier;
+                } else {
+                    reward = Math.floor(Math.random() * (box.maxReward - box.minReward + 1)) + box.minReward;
+                }
+                
+                gameState.gold += reward;
+                localStorage.setItem('gtgMysteryBoxesOpened', gameState.mysteryBoxesOpened);
+                
+                // Show reward modal
+                showReward(reward, type);
+                
+                updateDisplays();
+                loadShopItems();
+                updateDailyDeals();
+            } else {
+                instruction.textContent = `Not enough gold for a ${type} mystery box! You need ${box.cost} gold.`;
+                instruction.style.color = '#ff6b6b';
             }
         }
         
-        // Show achievement popup
-        function showAchievement(title, description) {
-            achievementTitle.textContent = title;
-            achievementDesc.textContent = description;
-            achievementPopup.style.display = 'flex';
-            soundSystem.playSound('achievement');
+        // Show reward modal
+        function showReward(reward, boxType) {
+            const box = mysteryBoxes[boxType];
+            const isJackpot = boxType === 'legendary' && reward > box.maxReward;
             
-            setTimeout(() => {
-                achievementPopup.style.display = 'none';
-            }, 3000);
-        }
-        
-        // Create particle effects
-        function createParticles(count, color = '#FFD700') {
-            if (!particlesContainer) return;
+            rewardIcon.innerHTML = `<i class="${box.icon}"></i>`;
+            rewardIcon.style.color = box.color;
+            rewardAmount.textContent = `+${reward} Gold`;
+            rewardAmount.style.color = box.color;
+            rewardMessage.textContent = isJackpot ? 
+                `JACKPOT! You got ${reward} gold from a legendary mystery box!` :
+                `You got ${reward} gold from a ${boxType} mystery box!`;
             
-            for (let i = 0; i < count; i++) {
-                const particle = document.createElement('div');
-                particle.style.position = 'absolute';
-                particle.style.width = '10px';
-                particle.style.height = '10px';
-                particle.style.background = color;
-                particle.style.borderRadius = '50%';
-                particle.style.left = `${Math.random() * 100}vw`;
-                particle.style.top = `${Math.random() * 100}vh`;
-                particle.style.pointerEvents = 'none';
-                particle.style.opacity = '0.8';
-                particle.style.zIndex = '9999';
-                
-                particlesContainer.appendChild(particle);
-                
-                // Animate particle
-                const animation = particle.animate([
-                    { transform: 'translate(0, 0) scale(1)', opacity: 0.8 },
-                    { transform: `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0)`, opacity: 0 }
-                ], {
-                    duration: 1000 + Math.random() * 1000,
-                    easing: 'cubic-bezier(0.1, 0.7, 1.0, 0.1)'
-                });
-                
-                animation.onfinish = () => {
-                    particle.remove();
-                };
-            }
+            rewardModal.style.display = 'flex';
+            
+            // Play appropriate sound
+            soundSystem.playSound(boxType);
         }
         
         // Update sound button
@@ -2700,6 +2728,13 @@
         });
         soundToggle.addEventListener('click', () => soundSystem.toggle());
         
+        // Fix for game over restart button
+        gameOverScreen.addEventListener('click', function(e) {
+            if (e.target.id === 'restart-btn' || e.target.closest('#restart-btn')) {
+                initGame();
+            }
+        });
+        
         // Shop tab listeners
         shopTabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -2717,7 +2752,26 @@
             });
         });
         
-        // Initialize the game
+        // Close modals when clicking outside
+        hintModal.addEventListener('click', (e) => {
+            if (e.target === hintModal) {
+                hintModal.style.display = 'none';
+            }
+        });
+        
+        rewardModal.addEventListener('click', (e) => {
+            if (e.target === rewardModal) {
+                rewardModal.style.display = 'none';
+            }
+        });
+        
+        gameOverScreen.addEventListener('click', (e) => {
+            if (e.target === gameOverScreen) {
+                gameOverScreen.style.display = 'none';
+            }
+        });
+        
+        // Initialize the game on page load
         window.addEventListener('DOMContentLoaded', initGame);
         
         // Resume audio context on user interaction
@@ -2726,10 +2780,6 @@
                 soundSystem.audioContext.resume();
             }
         }, { once: true });
-        
-        // Note: The following functions from previous version are still available:
-        // buyItem(), equipTheme(), applyTheme(), equipIcon(), buyDailyDeal(), buyMysteryBox(), showReward()
-        // They work with the new game state and have been integrated
     </script>
 </body>
 </html>
