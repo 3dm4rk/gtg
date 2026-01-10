@@ -2854,7 +2854,21 @@
             updateSoundButton();
             
             // Generate initial empty options
-            generateOptions();
+            generateEmptyOptions();
+        }
+
+        function generateEmptyOptions() {
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 2; i++) {
+                const option = document.createElement('div');
+                option.className = 'option';
+                option.innerHTML = '<i class="fas fa-question"></i>';
+                option.style.pointerEvents = 'none';
+                option.style.opacity = '0.5';
+                container.appendChild(option);
+            }
         }
 
         function startGame() {
@@ -2951,11 +2965,11 @@
             if (!gameState.gameActive) return;
             
             const isCorrect = index === gameState.goldPosition;
+            gameState.revealedOptions.push(index);
             
             if (isCorrect) {
                 // Correct guess
                 soundSystem.playSound('correct');
-                gameState.revealedOptions.push(index);
                 gameState.streak++;
                 gameState.totalCorrect++;
                 
@@ -2981,12 +2995,7 @@
                 document.getElementById('instruction').innerHTML = `<span style="color:#51cf66">✓ Correct! Gold found! +${goldEarned} Gold</span>`;
                 document.getElementById('instruction').style.borderLeftColor = '#51cf66';
                 
-                // Reveal all options
-                for (let i = 0; i < gameState.optionsCount; i++) {
-                    if (!gameState.revealedOptions.includes(i)) {
-                        gameState.revealedOptions.push(i);
-                    }
-                }
+                // Reveal gold option
                 generateOptions();
                 
                 // Show next level button
@@ -2998,11 +3007,18 @@
                 // Play gold sound
                 soundSystem.playSound('gold');
                 
+                // Special levels handling
+                if (gameState.currentLevelType === 'chainReaction') {
+                    gameState.levelData.chainReaction.goldFound++;
+                    const multiplier = 1 + Math.floor(gameState.levelData.chainReaction.goldFound / 3);
+                    gameState.levelData.chainReaction.chainMultiplier = multiplier;
+                    document.getElementById('gold-count-display').textContent = `Chain: ${gameState.levelData.chainReaction.goldFound}x (${multiplier} multiplier)`;
+                }
+                
             } else {
                 // Wrong guess
                 soundSystem.playSound('wrong');
-                gameState.revealedOptions.push(index);
-                gameState.streak = 0;
+                gameState.streak = gameState.streakShield ? gameState.streak : 0;
                 gameState.lives--;
                 gameState.totalWrong++;
                 
@@ -3036,6 +3052,11 @@
             
             // Stop pet music
             stopPetMusic();
+            
+            // Stop any active timers
+            if (gameState.levelData.timeAttack.timer) {
+                clearInterval(gameState.levelData.timeAttack.timer);
+            }
             
             // Update final stats
             document.getElementById('final-level').textContent = gameState.level;
