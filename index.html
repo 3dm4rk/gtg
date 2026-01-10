@@ -889,15 +889,19 @@
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         
-        /* ====== SOUND CONTROL ====== */
+        /* ====== SOUND & MUSIC CONTROLS ====== */
         .sound-control {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
         }
         
-        .sound-btn {
+        .sound-btn, .music-btn {
             background: rgba(0, 0, 0, 0.5);
             border: none;
             border-radius: 50%;
@@ -914,10 +918,40 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .sound-btn:hover {
+        .sound-btn:hover, .music-btn:hover {
             background: rgba(0, 0, 0, 0.7);
             transform: scale(1.1) rotate(10deg);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .music-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+        
+        .music-slider {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .music-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--primary-gold);
+            cursor: pointer;
         }
         
         /* ====== FOOTER ====== */
@@ -1130,6 +1164,16 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* ====== MUSIC ICON ANIMATION ====== */
+        .music-playing {
+            animation: musicPulse 1s infinite alternate;
+        }
+        
+        @keyframes musicPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
     </style>
 </head>
 <body>
@@ -1161,8 +1205,14 @@
         <span id="player-name-display">Player</span>
     </div>
     
-    <!-- Sound control -->
+    <!-- Sound & Music controls -->
     <div class="sound-control">
+        <div class="music-controls" id="music-controls">
+            <input type="range" min="0" max="100" value="50" class="music-slider" id="music-volume">
+            <button class="music-btn" id="music-toggle">
+                <i class="fas fa-music"></i>
+            </button>
+        </div>
         <button class="sound-btn" id="sound-toggle">
             <i class="fas fa-volume-up"></i>
         </button>
@@ -1536,7 +1586,7 @@
 
     <!-- Audio for background music -->
     <audio id="background-music" loop>
-        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-epic-adventure-4.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
 
@@ -1607,7 +1657,8 @@
             
             // Sound
             soundEnabled: true,
-            backgroundMusic: false,
+            musicEnabled: false,
+            musicVolume: 0.5,
             
             // Pet streak tracking
             petStreakCounter: 0,
@@ -1741,7 +1792,39 @@
                 document.getElementById('player-name-display').textContent = gameState.playerName;
                 initGame();
             }
+            
+            // Initialize audio on first user interaction
+            initializeAudio();
         });
+
+        function initializeAudio() {
+            // Create a function to handle first user interaction
+            const initAudioOnInteraction = () => {
+                // Try to play a tiny silent sound to unlock audio
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(1, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+                
+                // Remove event listeners after first interaction
+                document.removeEventListener('click', initAudioOnInteraction);
+                document.removeEventListener('keydown', initAudioOnInteraction);
+                document.removeEventListener('touchstart', initAudioOnInteraction);
+            };
+            
+            // Add event listeners for various user interactions
+            document.addEventListener('click', initAudioOnInteraction);
+            document.addEventListener('keydown', initAudioOnInteraction);
+            document.addEventListener('touchstart', initAudioOnInteraction);
+        }
 
         function loadGameState() {
             const savedName = localStorage.getItem('gtgPlayerName');
@@ -1783,6 +1866,12 @@
             const savedSound = localStorage.getItem('gtgSoundEnabled');
             if (savedSound !== null) gameState.soundEnabled = savedSound === 'true';
             
+            const savedMusic = localStorage.getItem('gtgMusicEnabled');
+            if (savedMusic !== null) gameState.musicEnabled = savedMusic === 'true';
+            
+            const savedMusicVolume = localStorage.getItem('gtgMusicVolume');
+            if (savedMusicVolume) gameState.musicVolume = parseFloat(savedMusicVolume);
+            
             const savedMysteryBoxes = localStorage.getItem('gtgMysteryBoxesOpened');
             if (savedMysteryBoxes) gameState.mysteryBoxesOpened = parseInt(savedMysteryBoxes);
             
@@ -1806,6 +1895,8 @@
             localStorage.setItem('gtgEquippedFrame', gameState.equippedFrame);
             localStorage.setItem('gtgEquippedPet', gameState.equippedPet);
             localStorage.setItem('gtgSoundEnabled', gameState.soundEnabled);
+            localStorage.setItem('gtgMusicEnabled', gameState.musicEnabled);
+            localStorage.setItem('gtgMusicVolume', gameState.musicVolume);
             localStorage.setItem('gtgMysteryBoxesOpened', gameState.mysteryBoxesOpened);
         }
 
@@ -1860,14 +1951,6 @@
             gameState.petStreakCounter = 0;
             gameState.isSelecting = false;
             
-            // Stop background music if playing
-            const bgMusic = document.getElementById('background-music');
-            if (bgMusic) {
-                bgMusic.pause();
-                bgMusic.currentTime = 0;
-                gameState.backgroundMusic = false;
-            }
-            
             // Update displays
             updateDisplays();
             updateLivesDisplay();
@@ -1875,6 +1958,7 @@
             loadShopItems();
             updateAvatarDisplay();
             updateSoundButton();
+            updateMusicControls();
             
             // Reset UI
             document.getElementById('instruction').textContent = "Click 'Start Game' to begin your treasure hunt!";
@@ -1914,17 +1998,64 @@
             document.getElementById('start-btn').disabled = true;
             gameState.totalGames++;
             
-            // Start background music if music dragon is equipped
-            if (gameState.equippedPet === 'music_dragon' && gameState.soundEnabled) {
-                const bgMusic = document.getElementById('background-music');
-                if (bgMusic) {
-                    bgMusic.volume = 0.3;
-                    bgMusic.play().catch(e => console.log("Audio play failed:", e));
-                    gameState.backgroundMusic = true;
-                }
+            // Start background music if music dragon is equipped AND music is enabled
+            if (gameState.equippedPet === 'music_dragon' && gameState.musicEnabled) {
+                startBackgroundMusic();
             }
             
             nextLevel();
+        }
+
+        function startBackgroundMusic() {
+            const bgMusic = document.getElementById('background-music');
+            if (!bgMusic) return;
+            
+            // Set volume
+            bgMusic.volume = gameState.musicVolume;
+            
+            // Play with user interaction context
+            const playMusic = () => {
+                bgMusic.play().then(() => {
+                    console.log("Background music started");
+                    updateMusicButton(true);
+                }).catch(e => {
+                    console.log("Music play failed, will retry on user interaction:", e);
+                    // Wait for user interaction and retry
+                    document.addEventListener('click', function retryPlay() {
+                        bgMusic.play().then(() => {
+                            console.log("Background music started after user interaction");
+                            updateMusicButton(true);
+                        }).catch(e2 => {
+                            console.log("Music play still failed:", e2);
+                        });
+                        document.removeEventListener('click', retryPlay);
+                    }, { once: true });
+                });
+            };
+            
+            playMusic();
+        }
+
+        function stopBackgroundMusic() {
+            const bgMusic = document.getElementById('background-music');
+            if (bgMusic) {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+                updateMusicButton(false);
+            }
+        }
+
+        function updateMusicButton(isPlaying) {
+            const musicIcon = document.querySelector('#music-toggle i');
+            const musicBtn = document.getElementById('music-toggle');
+            
+            if (isPlaying) {
+                musicIcon.className = 'fas fa-volume-up';
+                musicBtn.classList.add('music-playing');
+            } else {
+                musicIcon.className = 'fas fa-volume-mute';
+                musicBtn.classList.remove('music-playing');
+            }
         }
 
         function nextLevel() {
@@ -1983,6 +2114,10 @@
             const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
             if (pet && pet.id !== 'none') {
                 instruction += ` <span style="color:${pet.color};font-size:0.9em">(Pet: ${pet.name} - ${pet.effect})</span>`;
+                // Special message for Music Dragon
+                if (pet.id === 'music_dragon' && gameState.musicEnabled) {
+                    instruction += ` <span style="color:#9c88ff"><i class="fas fa-music"></i></span>`;
+                }
             }
             document.getElementById('instruction').innerHTML = instruction;
         }
@@ -2132,13 +2267,12 @@
         }
 
         function handleWrongGuess() {
-            // Stop background music if streak is broken
-            if (gameState.equippedPet === 'music_dragon' && gameState.backgroundMusic) {
+            // Stop background music if streak is broken and Music Dragon is equipped
+            if (gameState.equippedPet === 'music_dragon' && !gameState.permanentPowerUps.streakShield) {
                 const bgMusic = document.getElementById('background-music');
                 if (bgMusic) {
                     bgMusic.pause();
-                    bgMusic.currentTime = 0;
-                    gameState.backgroundMusic = false;
+                    updateMusicButton(false);
                 }
             }
             
@@ -2161,7 +2295,7 @@
             
             // Show failure message
             let message = `<span style="color:#ff6b6b">✗ Wrong! That was empty!</span>`;
-            if (gameState.equippedPet === 'music_dragon') {
+            if (gameState.equippedPet === 'music_dragon' && !gameState.permanentPowerUps.streakShield) {
                 message = `<span style="color:#ff6b6b">✗ Wrong! Music stopped!</span>`;
             }
             document.getElementById('instruction').innerHTML = message;
@@ -2196,12 +2330,7 @@
             gameState.isSelecting = false;
             
             // Stop background music
-            const bgMusic = document.getElementById('background-music');
-            if (bgMusic) {
-                bgMusic.pause();
-                bgMusic.currentTime = 0;
-                gameState.backgroundMusic = false;
-            }
+            stopBackgroundMusic();
             
             // Update high score
             if (gameState.score > gameState.highScore) {
@@ -2334,6 +2463,17 @@
                         setTimeout(() => {
                             showGoldEffect(0, `${pet.name} equipped!`);
                         }, 500);
+                        
+                        // If it's Music Dragon, show music controls
+                        if (pet.id === 'music_dragon') {
+                            document.getElementById('music-controls').style.display = 'flex';
+                            // Enable music by default when buying Music Dragon
+                            if (!gameState.musicEnabled) {
+                                gameState.musicEnabled = true;
+                                updateMusicControls();
+                                startBackgroundMusic();
+                            }
+                        }
                     }
                 }
                 
@@ -2355,6 +2495,19 @@
                     gameState.equippedPet = itemId;
                     // Reset pet streak counter when changing pets
                     gameState.petStreakCounter = 0;
+                    
+                    // Handle Music Dragon specific actions
+                    if (itemId === 'music_dragon') {
+                        document.getElementById('music-controls').style.display = 'flex';
+                        if (gameState.musicEnabled && gameState.gameActive) {
+                            startBackgroundMusic();
+                        }
+                    } else {
+                        // Stop music if switching from Music Dragon
+                        if (gameState.equippedPet === 'music_dragon') {
+                            stopBackgroundMusic();
+                        }
+                    }
                     break;
             }
             
@@ -2756,126 +2909,6 @@
             rewardModal.style.display = 'flex';
         }
 
-        // ====== EVENT LISTENERS SETUP ======
-        function setupEventListeners() {
-            // Welcome system
-            setupWelcomeSystem();
-            
-            // Game buttons
-            const startBtn = document.getElementById('start-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const restartBtn = document.getElementById('restart-btn');
-            const shopBtn = document.getElementById('shop-btn');
-            const statsBtn = document.getElementById('stats-btn');
-            const closeStatsBtn = document.getElementById('close-stats-btn');
-            const closeRewardBtn = document.getElementById('close-reward-btn');
-            const closeMysteryBtn = document.getElementById('close-mystery-btn');
-            
-            if (startBtn) startBtn.addEventListener('click', startGame);
-            if (nextBtn) nextBtn.addEventListener('click', nextLevel);
-            if (restartBtn) restartBtn.addEventListener('click', initGame);
-            if (shopBtn) shopBtn.addEventListener('click', () => {
-                document.getElementById('shop-gold-display').textContent = gameState.gold;
-            });
-            if (statsBtn) statsBtn.addEventListener('click', showStatsModal);
-            if (closeStatsBtn) closeStatsBtn.addEventListener('click', () => {
-                document.getElementById('stats-modal').style.display = 'none';
-            });
-            if (closeRewardBtn) closeRewardBtn.addEventListener('click', () => {
-                document.getElementById('reward-modal').style.display = 'none';
-                gameState.isSelecting = false;
-                nextLevel();
-            });
-            if (closeMysteryBtn) closeMysteryBtn.addEventListener('click', () => {
-                document.getElementById('mystery-modal').style.display = 'none';
-                // Reload shop items to reflect new purchases
-                loadShopItems();
-            });
-            
-            // Shop tabs
-            document.querySelectorAll('.shop-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabName = this.dataset.tab;
-                    
-                    // Update active tab
-                    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Show corresponding content
-                    document.querySelectorAll('.shop-tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    const tabContent = document.getElementById(`${tabName}-tab`);
-                    if (tabContent) tabContent.classList.add('active');
-                });
-            });
-            
-            // Sound toggle
-            const soundToggle = document.getElementById('sound-toggle');
-            if (soundToggle) {
-                soundToggle.addEventListener('click', function() {
-                    gameState.soundEnabled = !gameState.soundEnabled;
-                    updateSoundButton();
-                    
-                    // Also control background music
-                    const bgMusic = document.getElementById('background-music');
-                    if (bgMusic) {
-                        if (gameState.soundEnabled && gameState.backgroundMusic) {
-                            bgMusic.play().catch(e => console.log("Audio play failed:", e));
-                        } else {
-                            bgMusic.pause();
-                        }
-                    }
-                    
-                    saveGameState();
-                    
-                    showNotification(`Sound ${gameState.soundEnabled ? 'enabled' : 'disabled'}`, 'info');
-                });
-            }
-            
-            // Close modals when clicking outside
-            const statsModal = document.getElementById('stats-modal');
-            const rewardModal = document.getElementById('reward-modal');
-            const gameOverModal = document.getElementById('game-over');
-            const mysteryModal = document.getElementById('mystery-modal');
-            
-            if (statsModal) {
-                statsModal.addEventListener('click', (e) => {
-                    if (e.target === statsModal) {
-                        statsModal.style.display = 'none';
-                    }
-                });
-            }
-            
-            if (rewardModal) {
-                rewardModal.addEventListener('click', (e) => {
-                    if (e.target === rewardModal) {
-                        rewardModal.style.display = 'none';
-                        gameState.isSelecting = false;
-                        nextLevel();
-                    }
-                });
-            }
-            
-            if (gameOverModal) {
-                gameOverModal.addEventListener('click', (e) => {
-                    if (e.target === gameOverModal) {
-                        gameOverModal.style.display = 'none';
-                    }
-                });
-            }
-            
-            if (mysteryModal) {
-                mysteryModal.addEventListener('click', (e) => {
-                    if (e.target === mysteryModal) {
-                        mysteryModal.style.display = 'none';
-                        // Reload shop items to reflect new purchases
-                        loadShopItems();
-                    }
-                });
-            }
-        }
-
         function updateSoundButton() {
             const icon = document.querySelector('#sound-toggle i');
             if (!icon) return;
@@ -2886,20 +2919,327 @@
                 icon.className = 'fas fa-volume-mute';
             }
         }
+
+        function updateMusicControls() {
+    const musicToggle = document.getElementById('music-toggle');
+    const musicSlider = document.getElementById('music-volume');
+    const musicControls = document.getElementById('music-controls');
+    
+    if (!musicToggle || !musicSlider || !musicControls) return;
+    
+    // Update slider value
+    musicSlider.value = gameState.musicVolume * 100;
+    
+    // Update toggle button state
+    const musicIcon = musicToggle.querySelector('i');
+    if (gameState.musicEnabled) {
+        musicIcon.className = 'fas fa-volume-up';
+        musicToggle.classList.add('music-playing');
+    } else {
+        musicIcon.className = 'fas fa-volume-mute';
+        musicToggle.classList.remove('music-playing');
+    }
+    
+    // Apply volume to music
+    const bgMusic = document.getElementById('background-music');
+    if (bgMusic) {
+        bgMusic.volume = gameState.musicVolume;
+    }
+    
+    // Show/hide music controls based on pet
+    if (gameState.equippedPet === 'music_dragon') {
+        musicControls.style.display = 'flex';
+    } else {
+        musicControls.style.display = 'none';
+        // Stop music if not equipped with Music Dragon
+        if (bgMusic) {
+            bgMusic.pause();
+            bgMusic.currentTime = 0;
+        }
+    }
+}
+
+function setupEventListeners() {
+    // Welcome system
+    setupWelcomeSystem();
+    
+    // Game controls
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('next-btn').addEventListener('click', () => {
+        gameState.isSelecting = false;
+        nextLevel();
+    });
+    document.getElementById('restart-btn').addEventListener('click', initGame);
+    document.getElementById('shop-btn').addEventListener('click', () => {
+        updateDisplays();
+        loadShopItems();
+    });
+    document.getElementById('stats-btn').addEventListener('click', showStatsModal);
+    
+    // Shop tabs
+    const shopTabs = document.querySelectorAll('.shop-tab');
+    shopTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            
+            // Update active tab
+            shopTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show corresponding content
+            document.querySelectorAll('.shop-tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+    });
+    
+    // Modal close buttons
+    document.getElementById('close-reward-btn').addEventListener('click', function() {
+        document.getElementById('reward-modal').style.display = 'none';
+        gameState.isSelecting = false;
+        nextLevel();
+    });
+    
+    document.getElementById('close-mystery-btn').addEventListener('click', function() {
+        document.getElementById('mystery-modal').style.display = 'none';
+        loadShopItems(); // Refresh shop to show new items
+    });
+    
+    document.getElementById('close-stats-btn').addEventListener('click', function() {
+        document.getElementById('stats-modal').style.display = 'none';
+    });
+    
+    // Sound controls
+    document.getElementById('sound-toggle').addEventListener('click', function() {
+        gameState.soundEnabled = !gameState.soundEnabled;
+        updateSoundButton();
+        saveGameState();
+        showNotification(`Sound ${gameState.soundEnabled ? 'enabled' : 'disabled'}`, 'info');
+    });
+    
+    // Music controls
+    document.getElementById('music-toggle').addEventListener('click', function() {
+        gameState.musicEnabled = !gameState.musicEnabled;
         
-        // Initialize the game when page loads
-        window.addEventListener('load', function() {
-            // Show welcome modal if no player name is set
-            if (!gameState.playerName) {
-                document.getElementById('welcome-modal').style.display = 'flex';
+        if (gameState.musicEnabled) {
+            if (gameState.equippedPet === 'music_dragon') {
+                startBackgroundMusic();
+            } else {
+                showNotification('Music Dragon pet required for background music!', 'error');
+                gameState.musicEnabled = false;
+            }
+        } else {
+            stopBackgroundMusic();
+        }
+        
+        updateMusicControls();
+        saveGameState();
+        showNotification(`Music ${gameState.musicEnabled ? 'enabled' : 'disabled'}`, 'info');
+    });
+    
+    document.getElementById('music-volume').addEventListener('input', function() {
+        gameState.musicVolume = this.value / 100;
+        
+        const bgMusic = document.getElementById('background-music');
+        if (bgMusic) {
+            bgMusic.volume = gameState.musicVolume;
+        }
+        
+        saveGameState();
+    });
+    
+    // Close modals when clicking outside
+    const modals = ['reward-modal', 'game-over', 'mystery-modal', 'stats-modal', 'welcome-modal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                }
+            });
+        }
+    });
+}
+
+// Initialize the game when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup event listeners first
+    setupEventListeners();
+    
+    // Load saved game state
+    loadGameState();
+    
+    // Check if player name is set
+    if (!gameState.playerName) {
+        document.getElementById('welcome-modal').style.display = 'flex';
+    } else {
+        document.getElementById('player-name-display').textContent = gameState.playerName;
+        initGame();
+    }
+    
+    // Initialize audio on first user interaction
+    initializeAudio();
+    
+    // Initialize music controls based on equipped pet
+    updateMusicControls();
+});
+
+// New function to handle Music Dragon pet effects
+function applyMusicDragonEffects() {
+    if (gameState.equippedPet === 'music_dragon') {
+        // Show music controls
+        document.getElementById('music-controls').style.display = 'flex';
+        
+        // Start music if enabled and game is active
+        if (gameState.musicEnabled && gameState.gameActive) {
+            startBackgroundMusic();
+        }
+        
+        // Add visual effect for Music Dragon
+        const dragonEffect = document.createElement('div');
+        dragonEffect.style.position = 'fixed';
+        dragonEffect.style.top = '10px';
+        dragonEffect.style.right = '80px';
+        dragonEffect.style.zIndex = '99';
+        dragonEffect.style.fontSize = '1.5rem';
+        dragonEffect.style.color = '#9c88ff';
+        dragonEffect.style.animation = 'pulse 2s infinite';
+        dragonEffect.innerHTML = '<i class="fas fa-dragon"></i>';
+        dragonEffect.id = 'dragon-effect';
+        
+        if (!document.getElementById('dragon-effect')) {
+            document.body.appendChild(dragonEffect);
+        }
+        
+        // Add tooltip
+        dragonEffect.title = "Music Dragon equipped! 50% luck boost + background music";
+    } else {
+        // Remove dragon effect if not equipped
+        const dragonEffect = document.getElementById('dragon-effect');
+        if (dragonEffect) {
+            dragonEffect.remove();
+        }
+    }
+}
+
+// Call this function when pet is equipped or game starts
+function updatePetEffects() {
+    applyMusicDragonEffects();
+}
+
+// Add this to your equipItem function (after line where pet is equipped):
+function equipItem(itemId, category) {
+    switch(category) {
+        case 'avatars':
+            gameState.equippedAvatar = itemId;
+            break;
+        case 'frames':
+            gameState.equippedFrame = itemId;
+            break;
+        case 'pets':
+            gameState.equippedPet = itemId;
+            // Reset pet streak counter when changing pets
+            gameState.petStreakCounter = 0;
+            
+            // Update pet effects
+            updatePetEffects();
+            
+            // Handle Music Dragon specific actions
+            if (itemId === 'music_dragon') {
+                document.getElementById('music-controls').style.display = 'flex';
+                if (gameState.musicEnabled && gameState.gameActive) {
+                    startBackgroundMusic();
+                }
+            } else {
+                // Stop music if switching from Music Dragon
+                if (gameState.equippedPet === 'music_dragon') {
+                    stopBackgroundMusic();
+                }
+            }
+            break;
+    }
+    
+    updateAvatarDisplay();
+    loadShopItems();
+    saveGameState();
+}
+
+// Also call updatePetEffects when game starts
+function startGame() {
+    if (gameState.gameActive) return;
+    
+    gameState.gameActive = true;
+    gameState.isSelecting = false;
+    document.getElementById('start-btn').disabled = true;
+    gameState.totalGames++;
+    
+    // Apply pet effects
+    updatePetEffects();
+    
+    // Start background music if music dragon is equipped AND music is enabled
+    if (gameState.equippedPet === 'music_dragon' && gameState.musicEnabled) {
+        startBackgroundMusic();
+    }
+    
+    nextLevel();
+}
+
+// Fix the startBackgroundMusic function to be more robust
+function startBackgroundMusic() {
+    const bgMusic = document.getElementById('background-music');
+    if (!bgMusic) return;
+    
+    // Set volume
+    bgMusic.volume = gameState.musicVolume;
+    
+    // Check if already playing
+    if (!bgMusic.paused) return;
+    
+    // Play with user interaction context
+    const playMusic = () => {
+        bgMusic.play().then(() => {
+            console.log("Background music started");
+            updateMusicButton(true);
+        }).catch(e => {
+            console.log("Music play failed, will retry on user interaction:", e);
+            // Show helpful message
+            if (e.name === 'NotAllowedError') {
+                showNotification('Click anywhere to enable background music!', 'info');
             }
             
-            // Initialize audio context on user interaction
-            document.body.addEventListener('click', function initAudio() {
-                // This helps with browser autoplay policies
-                document.body.removeEventListener('click', initAudio);
-            });
+            // Wait for user interaction and retry
+            const retryPlay = () => {
+                bgMusic.play().then(() => {
+                    console.log("Background music started after user interaction");
+                    updateMusicButton(true);
+                    showNotification('Music started! Enjoy!', 'success');
+                }).catch(e2 => {
+                    console.log("Music play still failed:", e2);
+                });
+                document.removeEventListener('click', retryPlay);
+            };
+            
+            document.addEventListener('click', retryPlay, { once: true });
         });
-    </script>
-</body>
-</html>
+    };
+    
+    playMusic();
+}
+
+// Update the music button display
+function updateMusicButton(isPlaying) {
+    const musicIcon = document.querySelector('#music-toggle i');
+    const musicBtn = document.getElementById('music-toggle');
+    
+    if (!musicIcon || !musicBtn) return;
+    
+    if (isPlaying) {
+        musicIcon.className = 'fas fa-volume-up';
+        musicBtn.classList.add('music-playing');
+    } else {
+        musicIcon.className = 'fas fa-volume-mute';
+        musicBtn.classList.remove('music-playing');
+    }
+}
