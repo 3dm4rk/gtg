@@ -1079,6 +1079,57 @@
             background: linear-gradient(45deg, #FFD700, #FFA500);
             color: #000;
         }
+        
+        /* ====== NOTIFICATION ====== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-gold);
+            z-index: 2000;
+            animation: slideDown 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        /* ====== LOADING OVERLAY ====== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-gold);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1091,6 +1142,15 @@
             <button class="welcome-btn" id="save-name-btn">Start Playing!</button>
         </div>
     </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading next level...</p>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
     
     <!-- Avatar Display -->
     <div class="avatar-display" id="avatar-display">
@@ -1476,8 +1536,19 @@
 
     <!-- Audio for background music -->
     <audio id="background-music" loop>
-        <source src="dnn.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
+    </audio>
+
+    <!-- Audio for sound effects -->
+    <audio id="correct-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="wrong-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="purchase-sound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-cash-register-purchase-875.mp3" type="audio/mpeg">
     </audio>
 
     <script>
@@ -1539,7 +1610,10 @@
             backgroundMusic: false,
             
             // Pet streak tracking
-            petStreakCounter: 0
+            petStreakCounter: 0,
+            
+            // Game flags
+            isSelecting: false
         };
 
         // ====== SHOP ITEMS DATABASE ======
@@ -1784,6 +1858,7 @@
                 hintUsed: false
             };
             gameState.petStreakCounter = 0;
+            gameState.isSelecting = false;
             
             // Stop background music if playing
             const bgMusic = document.getElementById('background-music');
@@ -1812,6 +1887,9 @@
             
             // Generate empty options
             generateEmptyOptions();
+            
+            // Hide loading overlay
+            hideLoading();
         }
 
         function generateEmptyOptions() {
@@ -1829,7 +1907,10 @@
         }
 
         function startGame() {
+            if (gameState.gameActive) return;
+            
             gameState.gameActive = true;
+            gameState.isSelecting = false;
             document.getElementById('start-btn').disabled = true;
             gameState.totalGames++;
             
@@ -1847,9 +1928,12 @@
         }
 
         function nextLevel() {
+            if (gameState.isSelecting) return;
+            
             gameState.level++;
             gameState.revealedOptions = [];
             gameState.selectedOption = null;
+            gameState.isSelecting = false;
             
             // Calculate difficulty
             gameState.optionsCount = Math.min(2 + Math.floor(gameState.level / 5), 10);
@@ -1918,12 +2002,13 @@
                     if (i === gameState.goldPosition) {
                         option.className = 'option gold';
                         option.innerHTML = '<i class="fas fa-gem"></i>';
+                        option.style.pointerEvents = 'none';
                     } else {
                         // Otherwise show empty
                         option.className = 'option empty';
                         option.innerHTML = '<i class="fas fa-times"></i>';
+                        option.style.pointerEvents = 'none';
                     }
-                    option.style.pointerEvents = 'none';
                 } else {
                     // Not revealed yet - show question mark and make clickable
                     option.innerHTML = '<i class="fas fa-question"></i>';
@@ -1935,8 +2020,9 @@
         }
 
         function selectOption(index) {
-            if (!gameState.gameActive || gameState.selectedOption !== null) return;
+            if (!gameState.gameActive || gameState.isSelecting || gameState.selectedOption !== null) return;
             
+            gameState.isSelecting = true;
             gameState.selectedOption = index;
             gameState.revealedOptions.push(index);
             
@@ -1947,14 +2033,6 @@
             } else {
                 handleWrongGuess();
             }
-            
-            // Update the display
-            generateOptions();
-            
-            // Update power-up buttons
-            updatePowerUpButtons();
-            
-            saveGameState();
         }
 
         function handleCorrectGuess() {
@@ -2014,6 +2092,9 @@
             gameState.totalGoldEarned += goldEarned;
             gameState.score += 100 * gameState.streak;
             
+            // Update the display first
+            generateOptions();
+            
             // Update displays
             updateDisplays();
             updatePowerUpButtons();
@@ -2025,18 +2106,29 @@
             }
             document.getElementById('instruction').innerHTML = message;
             
-            // Show reward modal
-            showRewardModal(goldEarned, "Great job! You found the gold!");
-            
-            // Show next button
-            document.getElementById('next-btn').style.display = 'flex';
-            
             // Play victory effects
-            playVictoryAnimation();
             playSound('correct');
+            playVictoryAnimation();
             
             // Add gold effect
             showGoldEffect(goldEarned, "Gold Earned!");
+            
+            // Show notification
+            showNotification(`Correct! +${goldEarned} Gold`, 'success');
+            
+            // Auto-proceed to next level after delay
+            setTimeout(() => {
+                showRewardModal(goldEarned, "Great job! You found the gold!");
+                
+                // Auto-close reward modal and go to next level
+                setTimeout(() => {
+                    document.getElementById('reward-modal').style.display = 'none';
+                    gameState.isSelecting = false;
+                    nextLevel();
+                }, 1500);
+            }, 1000);
+            
+            saveGameState();
         }
 
         function handleWrongGuess() {
@@ -2059,6 +2151,9 @@
             gameState.lives--;
             gameState.totalWrong++;
             
+            // Update the display
+            generateOptions();
+            
             // Update displays
             updateLivesDisplay();
             updateDisplays();
@@ -2071,16 +2166,34 @@
             }
             document.getElementById('instruction').innerHTML = message;
             
+            // Play wrong sound
+            playSound('wrong');
+            
+            // Show notification
+            showNotification('Wrong guess!', 'error');
+            
             // Check if game over
             if (gameState.lives <= 0) {
-                setTimeout(gameOver, 1000);
+                setTimeout(() => {
+                    gameOver();
+                    gameState.isSelecting = false;
+                }, 1000);
+            } else {
+                // Allow selecting again after delay
+                setTimeout(() => {
+                    gameState.isSelecting = false;
+                    gameState.selectedOption = null;
+                    // Regenerate options to re-enable clicking
+                    generateOptions();
+                }, 1000);
             }
             
-            playSound('wrong');
+            saveGameState();
         }
 
         function gameOver() {
             gameState.gameActive = false;
+            gameState.isSelecting = false;
             
             // Stop background music
             const bgMusic = document.getElementById('background-music');
@@ -2223,8 +2336,10 @@
                         }, 500);
                     }
                 }
+                
+                showNotification(`Purchased ${itemId}!`, 'success');
             } else {
-                alert(`Not enough gold! You need ${price} gold.`);
+                showNotification(`Not enough gold! Need ${price}`, 'error');
             }
         }
 
@@ -2298,8 +2413,10 @@
                 
                 showGoldEffect(-price, "Mystery Box!");
                 playSound('purchase');
+                
+                showNotification(`Opened ${type} Mystery Box!`, 'success');
             } else {
-                alert(`Not enough gold! You need ${price} gold.`);
+                showNotification(`Not enough gold! Need ${price}`, 'error');
             }
         }
 
@@ -2324,53 +2441,44 @@
             
             let totalGold = 0;
             let totalLives = 0;
-            let totalHints = 0;
             
             rewards.forEach(reward => {
                 const rewardItem = document.createElement('div');
                 rewardItem.className = 'mystery-reward-item';
                 
                 let description = '';
-                let rewardAction = '';
                 
                 switch(reward.type) {
                     case 'gold':
                         totalGold += reward.amount;
                         description = `+${reward.amount} Gold`;
-                        rewardAction = `Added ${reward.amount} gold to your balance!`;
                         break;
                     case 'life':
                         totalLives += reward.amount;
                         description = `+${reward.amount} Extra Life`;
-                        rewardAction = `Added ${reward.amount} extra life!`;
                         break;
                     case 'hint':
-                        totalHints += reward.amount;
+                        // Add free hints
                         description = `${reward.amount} Free Hints`;
-                        rewardAction = `Added ${reward.amount} free hints!`;
                         break;
                     case 'streak':
                         gameState.streak += reward.amount;
                         description = `+${reward.amount} Streak Bonus`;
-                        rewardAction = `Added ${reward.amount} to your streak!`;
                         break;
                     case 'permanent':
                         gameState.permanentPowerUps[reward.item] = true;
                         gameState.purchasedItems.push(reward.item);
                         description = `${reward.name} Unlocked!`;
-                        rewardAction = `Permanent power-up unlocked!`;
                         break;
                     case 'pet':
                         if (!gameState.purchasedItems.includes(reward.petId)) {
                             gameState.purchasedItems.push(reward.petId);
                             gameState.totalPets++;
                             description = `${reward.name} Unlocked!`;
-                            rewardAction = `New pet unlocked!`;
                         } else {
                             // If already owned, give gold instead
                             totalGold += 200;
-                            description = `Pet Already Owned`;
-                            rewardAction = `Converted to 200 gold!`;
+                            description = `Pet Already Owned (Converted to 200 gold)`;
                         }
                         break;
                 }
@@ -2385,9 +2493,6 @@
                     </div>
                 `;
                 container.appendChild(rewardItem);
-                
-                // Apply the reward
-                applyMysteryReward(reward, rewardAction);
             });
             
             // Apply bulk rewards
@@ -2406,12 +2511,6 @@
             
             // Show the modal
             document.getElementById('mystery-modal').style.display = 'flex';
-        }
-
-        function applyMysteryReward(reward, actionMessage) {
-            // Reward application is handled in showMysteryBoxModal
-            // This function is kept for consistency and future expansion
-            console.log(`Applied reward: ${actionMessage}`);
         }
 
         // ====== POWER-UPS & EXTENSIONS ======
@@ -2436,9 +2535,9 @@
                 showGoldEffect(-price, `${type} unlocked!`);
                 playSound('purchase');
                 
-                alert(`${type.replace(/([A-Z])/g, ' $1')} has been unlocked!`);
+                showNotification(`${type.replace(/([A-Z])/g, ' $1')} unlocked!`, 'success');
             } else {
-                alert(`Not enough gold! You need ${price} gold.`);
+                showNotification(`Not enough gold! Need ${price}`, 'error');
             }
         }
 
@@ -2460,9 +2559,9 @@
                 showGoldEffect(-price, `${extension} unlocked!`);
                 playSound('purchase');
                 
-                alert("Levels 51-100 have been unlocked!");
+                showNotification("Levels 51-100 unlocked!", 'success');
             } else {
-                alert(`Not enough gold! You need ${price} gold.`);
+                showNotification(`Not enough gold! Need ${price}`, 'error');
             }
         }
 
@@ -2513,6 +2612,7 @@
                             const randomWrong = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
                             gameState.revealedOptions.push(randomWrong);
                             generateOptions();
+                            showNotification('Hint used! One wrong option revealed.', 'info');
                         }
                         break;
                         
@@ -2520,11 +2620,13 @@
                         if (gameState.lives < gameState.maxLives) {
                             gameState.lives++;
                             updateLivesDisplay();
+                            showNotification('Extra life purchased!', 'success');
                         }
                         break;
                         
                     case 'goldrush':
                         gameState.activePowerUps.goldrush = true;
+                        showNotification('Gold Rush activated! Next gold x2!', 'success');
                         break;
                 }
                 
@@ -2535,7 +2637,7 @@
                 
                 saveGameState();
             } else {
-                alert(`Not enough gold! You need ${cost} gold.`);
+                showNotification(`Not enough gold! Need ${cost}`, 'error');
             }
         }
 
@@ -2554,6 +2656,104 @@
             document.getElementById('stats-mystery-boxes').textContent = gameState.mysteryBoxesOpened;
             
             document.getElementById('stats-modal').style.display = 'flex';
+        }
+
+        // ====== HELPER FUNCTIONS ======
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            
+            // Set color based on type
+            switch(type) {
+                case 'success':
+                    notification.style.borderLeftColor = '#51cf66';
+                    notification.style.background = 'rgba(81, 207, 102, 0.1)';
+                    break;
+                case 'error':
+                    notification.style.borderLeftColor = '#ff6b6b';
+                    notification.style.background = 'rgba(255, 107, 107, 0.1)';
+                    break;
+                case 'info':
+                    notification.style.borderLeftColor = '#4dabf7';
+                    notification.style.background = 'rgba(77, 171, 247, 0.1)';
+                    break;
+            }
+            
+            notification.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function showGoldEffect(amount, message) {
+            const effect = document.createElement('div');
+            effect.className = 'gold-collect';
+            effect.textContent = `${amount > 0 ? '+' : ''}${amount} ${message}`;
+            effect.style.left = `${Math.random() * 80 + 10}%`;
+            effect.style.top = `${Math.random() * 50 + 25}%`;
+            
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1500);
+        }
+
+        function playVictoryAnimation() {
+            // Add confetti effect
+            const confettiContainer = document.getElementById('confetti-container');
+            if (!confettiContainer) return;
+            
+            confettiContainer.innerHTML = '';
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animationDelay = `${Math.random() * 2}s`;
+                confettiContainer.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        function playSound(soundName) {
+            if (!gameState.soundEnabled) return;
+            
+            try {
+                const audio = document.getElementById(`${soundName}-sound`);
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log("Audio play failed:", e));
+                }
+            } catch (e) {
+                console.log("Audio not supported");
+            }
+        }
+
+        function showRewardModal(gold, message) {
+            const rewardModal = document.getElementById('reward-modal');
+            const rewardAmount = document.getElementById('reward-amount');
+            const rewardMessage = document.getElementById('reward-message');
+            
+            if (!rewardModal || !rewardAmount || !rewardMessage) return;
+            
+            rewardAmount.textContent = `+${gold} Gold`;
+            rewardMessage.textContent = message;
+            rewardModal.style.display = 'flex';
         }
 
         // ====== EVENT LISTENERS SETUP ======
@@ -2583,6 +2783,8 @@
             });
             if (closeRewardBtn) closeRewardBtn.addEventListener('click', () => {
                 document.getElementById('reward-modal').style.display = 'none';
+                gameState.isSelecting = false;
+                nextLevel();
             });
             if (closeMysteryBtn) closeMysteryBtn.addEventListener('click', () => {
                 document.getElementById('mystery-modal').style.display = 'none';
@@ -2626,6 +2828,8 @@
                     }
                     
                     saveGameState();
+                    
+                    showNotification(`Sound ${gameState.soundEnabled ? 'enabled' : 'disabled'}`, 'info');
                 });
             }
             
@@ -2647,6 +2851,8 @@
                 rewardModal.addEventListener('click', (e) => {
                     if (e.target === rewardModal) {
                         rewardModal.style.display = 'none';
+                        gameState.isSelecting = false;
+                        nextLevel();
                     }
                 });
             }
@@ -2679,94 +2885,6 @@
             } else {
                 icon.className = 'fas fa-volume-mute';
             }
-        }
-
-        // ====== HELPER FUNCTIONS ======
-        function showGoldEffect(amount, message) {
-            const effect = document.createElement('div');
-            effect.className = 'gold-collect';
-            effect.textContent = `${amount > 0 ? '+' : ''}${amount} ${message}`;
-            effect.style.left = `${Math.random() * 80 + 10}%`;
-            effect.style.top = `${Math.random() * 50 + 25}%`;
-            
-            document.body.appendChild(effect);
-            
-            setTimeout(() => {
-                effect.remove();
-            }, 1500);
-        }
-
-        function playVictoryAnimation() {
-            // Add confetti effect
-            const confettiContainer = document.getElementById('confetti-container');
-            if (!confettiContainer) return;
-            
-            confettiContainer.innerHTML = '';
-            
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = `${Math.random() * 100}%`;
-                confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confetti.style.animationDelay = `${Math.random() * 2}s`;
-                confettiContainer.appendChild(confetti);
-                
-                setTimeout(() => {
-                    confetti.remove();
-                }, 3000);
-            }
-        }
-
-        function playSound(soundName) {
-            if (!gameState.soundEnabled) return;
-            
-            // Simple sound system using Web Audio API
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                if (soundName === 'correct') {
-                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
-                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
-                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.5);
-                } else if (soundName === 'wrong') {
-                    oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
-                    oscillator.frequency.setValueAtTime(196, audioContext.currentTime + 0.1); // G3
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.3);
-                } else if (soundName === 'purchase') {
-                    oscillator.frequency.setValueAtTime(392, audioContext.currentTime); // G4
-                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime + 0.1); // C5
-                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.4);
-                }
-            } catch (e) {
-                console.log("Audio not supported");
-            }
-        }
-
-        function showRewardModal(gold, message) {
-            const rewardModal = document.getElementById('reward-modal');
-            const rewardAmount = document.getElementById('reward-amount');
-            const rewardMessage = document.getElementById('reward-message');
-            
-            if (!rewardModal || !rewardAmount || !rewardMessage) return;
-            
-            rewardAmount.textContent = `+${gold} Gold`;
-            rewardMessage.textContent = message;
-            rewardModal.style.display = 'flex';
         }
         
         // Initialize the game when page loads
