@@ -79,16 +79,6 @@
             --theme-card-bg: rgba(0, 0, 0, 0.5);
         }
         
-        /* Lucky Cat Theme (Temporary when cat is active) */
-        .theme-lucky-cat {
-            --theme-primary: #FF69B4;
-            --theme-secondary: #FF1493;
-            --theme-accent: #FFB6C1;
-            --theme-bg-primary: #33001a;
-            --theme-bg-secondary: linear-gradient(135deg, #33001a 0%, #660033 100%);
-            --theme-card-bg: rgba(102, 0, 51, 0.3);
-        }
-        
         body {
             background: var(--theme-bg-secondary);
             color: var(--text-light);
@@ -107,85 +97,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        
-        /* ====== REDEEM CODE MODAL ====== */
-        .redeem-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.95);
-            z-index: 6000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .redeem-content {
-            background: linear-gradient(145deg, var(--darker-bg), #16213e);
-            padding: 40px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 95%;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
-            animation: modalSlideIn 0.4s ease;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            position: relative;
-            text-align: center;
-        }
-        
-        .redeem-title {
-            font-size: 2rem;
-            color: var(--theme-primary);
-            margin-bottom: 20px;
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-        }
-        
-        .redeem-input {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid var(--theme-primary);
-            border-radius: 10px;
-            color: white;
-            margin: 20px 0;
-            text-align: center;
-            text-transform: uppercase;
-        }
-        
-        .redeem-input:focus {
-            outline: none;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-        }
-        
-        .redeem-btn {
-            padding: 15px 40px;
-            background: linear-gradient(to right, var(--theme-primary), var(--theme-secondary));
-            border: none;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            color: #000;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 10px;
-            margin-right: 10px;
-        }
-        
-        .redeem-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px var(--theme-primary);
-        }
-        
-        .redeem-close-btn {
-            background: linear-gradient(to right, #868e96, #495057);
         }
         
         /* ====== WELCOME MODAL ====== */
@@ -335,6 +246,7 @@
         .info-value {
             font-size: 1.8rem;
             font-weight: bold;
+            color: var(--theme-primary);
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
@@ -551,6 +463,7 @@
         
         .power-up-icon {
             font-size: 2rem;
+            color: var(--theme-primary);
             transition: transform 0.3s ease;
         }
         
@@ -562,6 +475,7 @@
             font-size: 0.9rem;
             font-weight: bold;
             text-align: center;
+            color: var(--text-light);
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
@@ -595,6 +509,7 @@
         
         .power-up-action:disabled {
             background: #555;
+            color: #999;
             cursor: not-allowed;
             transform: none !important;
             box-shadow: none !important;
@@ -673,11 +588,6 @@
             color: white;
         }
         
-        .btn-redeem {
-            background: linear-gradient(to right, #FF69B4, #FF1493);
-            color: white;
-        }
-        
         .btn:disabled {
             background: #555;
             color: #999;
@@ -728,6 +638,7 @@
             padding: 10px 15px;
             border-radius: 20px;
             font-weight: bold;
+            color: var(--theme-primary);
             border: 1px solid var(--theme-primary);
         }
         
@@ -871,18 +782,6 @@
             background: linear-gradient(145deg, #1d3a4a, #182a3a);
         }
         
-        .shop-item.limited {
-            border-color: #FF69B4;
-            box-shadow: 0 0 20px rgba(255, 105, 180, 0.5);
-            background: linear-gradient(145deg, #4a2d3a, #2a1a25);
-            animation: limitedGlow 2s infinite alternate;
-        }
-        
-        @keyframes limitedGlow {
-            from { box-shadow: 0 0 15px rgba(255, 105, 180, 0.5); }
-            to { box-shadow: 0 0 25px rgba(255, 105, 180, 0.8), 0 0 35px rgba(255, 20, 147, 0.6); }
-        }
-        
         .shop-item-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -899,6 +798,7 @@
             text-align: center;
             margin-bottom: 5px;
             font-weight: bold;
+            color: var(--text-light);
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
@@ -933,6 +833,7 @@
         
         .shop-item-action:disabled {
             background: #555;
+            color: #999;
             cursor: not-allowed;
             transform: none !important;
             box-shadow: none !important;
@@ -944,10 +845,6 @@
         
         .shop-item-action.equipped {
             background: linear-gradient(to right, #868e96, #495057);
-        }
-        
-        .shop-item-action.claim {
-            background: linear-gradient(to right, #FF69B4, #FF1493);
         }
         
         /* ====== LEVEL PROGRESS ====== */
@@ -1244,6 +1141,7 @@
         .mystery-reward-title {
             font-weight: bold;
             margin-bottom: 5px;
+            color: var(--text-light);
         }
         
         .mystery-reward-description {
@@ -1279,11 +1177,6 @@
         .rarity-legendary {
             background: linear-gradient(45deg, var(--theme-primary), var(--theme-secondary));
             color: #000;
-        }
-        
-        .rarity-limited {
-            background: linear-gradient(45deg, #FF69B4, #FF1493);
-            color: #fff;
         }
         
         /* ====== NOTIFICATION ====== */
@@ -1433,68 +1326,11 @@
         .tagna-eliminating {
             animation: tagnaEffect 0.5s forwards;
         }
-        
-        /* Lucky Cat Effects */
-        .lucky-cat-effect {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            background: radial-gradient(circle at 50% 50%, rgba(255, 105, 180, 0.1) 0%, transparent 50%);
-            animation: catGlow 3s infinite alternate;
-        }
-        
-        @keyframes catGlow {
-            from { opacity: 0.3; }
-            to { opacity: 0.6; }
-        }
-        
-        .lucky-cat-notification {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            background: linear-gradient(to right, #FF69B4, #FF1493);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideInRight 0.3s ease;
-            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
     </style>
 </head>
 <body>
     <!-- Theme Effects -->
     <div id="theme-effects"></div>
-    
-    <!-- Lucky Cat Effect (when equipped) -->
-    <div class="lucky-cat-effect" id="lucky-cat-effect" style="display: none;"></div>
-    
-    <!-- Redeem Code Modal -->
-    <div class="redeem-modal" id="redeem-modal">
-        <div class="redeem-content">
-            <h2 class="redeem-title">Redeem Code</h2>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">Enter a special code to unlock exclusive rewards!</p>
-            <input type="text" class="redeem-input" id="redeem-code-input" placeholder="ENTER CODE HERE..." maxlength="20">
-            <div>
-                <button class="redeem-btn" id="redeem-code-btn">Redeem Code</button>
-                <button class="redeem-btn redeem-close-btn" id="close-redeem-btn">Close</button>
-            </div>
-            <p style="color: var(--text-muted); margin-top: 20px; font-size: 0.9rem;">note: admin will provide codes!</p>
-        </div>
-    </div>
     
     <!-- Welcome Modal -->
     <div class="welcome-modal" id="welcome-modal">
@@ -1514,12 +1350,6 @@
     
     <!-- Notification -->
     <div class="notification" id="notification"></div>
-    
-    <!-- Lucky Cat Gold Notification -->
-    <div class="lucky-cat-notification" id="lucky-cat-notification" style="display: none;">
-        <i class="fas fa-cat"></i>
-        <span>+200 Gold from Lucky Cat!</span>
-    </div>
     
     <!-- Avatar Display -->
     <div class="avatar-display" id="avatar-display">
@@ -1606,7 +1436,7 @@
                         </div>
                         <div class="power-ups-grid">
                             <div class="power-up-item">
-                                <div class="power-up-icon" style="color:#51cf66;">
+                                <div class="power-up-icon">
                                     <i class="fas fa-lightbulb"></i>
                                 </div>
                                 <div class="power-up-name">Hint</div>
@@ -1619,7 +1449,7 @@
                             </div>
                             
                             <div class="power-up-item">
-                                <div class="power-up-icon" style="color:#ff6b6b;">
+                                <div class="power-up-icon">
                                     <i class="fas fa-heart"></i>
                                 </div>
                                 <div class="power-up-name">Extra Life</div>
@@ -1632,7 +1462,7 @@
                             </div>
                             
                             <div class="power-up-item">
-                                <div class="power-up-icon" style="color:#cc5de8;">
+                                <div class="power-up-icon">
                                     <i class="fas fa-eye"></i>
                                 </div>
                                 <div class="power-up-name">Tagna</div>
@@ -1648,7 +1478,7 @@
                             </div>
                             
                             <div class="power-up-item">
-                                <div class="power-up-icon" style="color:#ffd700;">
+                                <div class="power-up-icon">
                                     <i class="fas fa-gem"></i>
                                 </div>
                                 <div class="power-up-name">Gold Rush</div>
@@ -1674,9 +1504,6 @@
                         </button>
                         <button class="btn btn-stats" id="stats-btn">
                             <i class="fas fa-chart-line"></i> My Stats
-                        </button>
-                        <button class="btn btn-redeem" id="redeem-btn">
-                            <i class="fas fa-gift"></i> Redeem Code
                         </button>
                     </div>
                 </div>
@@ -1737,7 +1564,7 @@
                                 <div class="category-title">Permanent Power-ups</div>
                                 <div class="shop-items">
                                     <div class="shop-item">
-                                        <div class="shop-item-icon" style="color:#51cf66;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-infinity"></i>
                                         </div>
                                         <div class="shop-item-title">Unlimited Hints</div>
@@ -1750,7 +1577,7 @@
                                     </div>
                                     
                                     <div class="shop-item">
-                                        <div class="shop-item-icon" style="color:#ff6b6b;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-shield-alt"></i>
                                         </div>
                                         <div class="shop-item-title">Streak Shield</div>
@@ -1763,7 +1590,7 @@
                                     </div>
                                     
                                     <div class="shop-item">
-                                        <div class="shop-item-icon" style="color:#4dabf7;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-rocket"></i>
                                         </div>
                                         <div class="shop-item-title">Level Skipper</div>
@@ -1784,7 +1611,7 @@
                                 <div class="category-title">Mystery Boxes</div>
                                 <div class="shop-items">
                                     <div class="shop-item epic">
-                                        <div class="shop-item-icon" style="color:#cc5de8;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-box-open"></i>
                                         </div>
                                         <div class="shop-item-title">Epic Mystery Box</div>
@@ -1800,7 +1627,7 @@
                                     </div>
                                     
                                     <div class="shop-item legendary">
-                                        <div class="shop-item-icon" style="color:#FFD700;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-gem"></i>
                                         </div>
                                         <div class="shop-item-title">Legendary Chest</div>
@@ -1824,7 +1651,7 @@
                                 <div class="category-title">Game Extensions</div>
                                 <div class="shop-items">
                                     <div class="shop-item">
-                                        <div class="shop-item-icon" style="color:#ffd700;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-trophy"></i>
                                         </div>
                                         <div class="shop-item-title">Levels 51-100</div>
@@ -1848,7 +1675,7 @@
                                 <div class="category-title">Premium Themes</div>
                                 <div class="shop-items">
                                     <div class="shop-item rare">
-                                        <div class="shop-item-icon" style="color:#228B22;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-leaf"></i>
                                         </div>
                                         <div class="shop-item-title">Earth Theme</div>
@@ -1864,7 +1691,7 @@
                                     </div>
                                     
                                     <div class="shop-item epic">
-                                        <div class="shop-item-icon" style="color:#1E90FF;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-water"></i>
                                         </div>
                                         <div class="shop-item-title">Sea Theme</div>
@@ -1880,7 +1707,7 @@
                                     </div>
                                     
                                     <div class="shop-item epic">
-                                        <div class="shop-item-icon" style="color:#87CEEB;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-cloud"></i>
                                         </div>
                                         <div class="shop-item-title">Sky Theme</div>
@@ -1896,7 +1723,7 @@
                                     </div>
                                     
                                     <div class="shop-item legendary">
-                                        <div class="shop-item-icon" style="color:#9c88ff;">
+                                        <div class="shop-item-icon">
                                             <i class="fas fa-star"></i>
                                         </div>
                                         <div class="shop-item-title">Space Theme</div>
@@ -1935,12 +1762,12 @@
         
         <div class="game-over" id="game-over">
             <div class="game-over-content">
-                <h2>Game Over!</h2>
+                <h2 style="color: var(--theme-primary);">Game Over!</h2>
                 <p>You've run out of lives. Try again to beat your high score!</p>
-                <p>Level Reached: <span id="final-level">0</span>/100</p>
-                <p>Gold Collected: <span id="final-gold">0</span></p>
-                <p>Final Score: <span id="final-score">0</span></p>
-                <p>High Score: <span id="final-high-score">0</span></p>
+                <p>Level Reached: <span id="final-level" style="color: var(--theme-primary);">0</span>/100</p>
+                <p>Gold Collected: <span id="final-gold" style="color: var(--theme-primary);">0</span></p>
+                <p>Final Score: <span id="final-score" style="color: var(--theme-primary);">0</span></p>
+                <p>High Score: <span id="final-high-score" style="color: var(--theme-primary);">0</span></p>
                 <button class="btn btn-start" id="restart-btn">
                     <i class="fas fa-redo"></i> Play Again
                 </button>
@@ -1965,14 +1792,14 @@
             <div class="hint-content">
                 <h3><i class="fas fa-chart-line"></i> Player Stats</h3>
                 <div style="margin: 20px 0;">
-                    <p>Total Games: <span id="stats-total-games">0</span></p>
-                    <p>Total Gold Earned: <span id="stats-total-gold">0</span></p>
-                    <p>Correct Guesses: <span id="stats-correct-guesses">0</span></p>
-                    <p>Wrong Guesses: <span id="stats-wrong-guesses">0</span></p>
-                    <p>Accuracy: <span id="stats-accuracy">0%</span></p>
-                    <p>Highest Streak: <span id="stats-highest-streak">0</span></p>
-                    <p>Pets Collected: <span id="stats-pets">0</span></p>
-                    <p>Mystery Boxes Opened: <span id="stats-mystery-boxes">0</span></p>
+                    <p>Total Games: <span id="stats-total-games" style="color: var(--theme-primary);">0</span></p>
+                    <p>Total Gold Earned: <span id="stats-total-gold" style="color: var(--theme-primary);">0</span></p>
+                    <p>Correct Guesses: <span id="stats-correct-guesses" style="color: var(--theme-primary);">0</span></p>
+                    <p>Wrong Guesses: <span id="stats-wrong-guesses" style="color: var(--theme-primary);">0</span></p>
+                    <p>Accuracy: <span id="stats-accuracy" style="color: var(--theme-primary);">0%</span></p>
+                    <p>Highest Streak: <span id="stats-highest-streak" style="color: var(--theme-primary);">0</span></p>
+                    <p>Pets Collected: <span id="stats-pets" style="color: var(--theme-primary);">0</span></p>
+                    <p>Mystery Boxes Opened: <span id="stats-mystery-boxes" style="color: var(--theme-primary);">0</span></p>
                 </div>
                 <button class="btn" id="close-stats-btn" style="background:linear-gradient(to right, #868e96, #495057);">
                     <i class="fas fa-times"></i> Close
@@ -1988,51 +1815,125 @@
     <!-- Confetti Container -->
     <div class="confetti-container" id="confetti-container"></div>
 
-    <!-- Audio for background music (Music Dragon) -->
+    <!-- Audio elements -->
     <audio id="background-music" loop preload="auto">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
 
-    <!-- Audio for satisfying victory sound -->
-    <audio id="victory-sound" preload="auto">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-winning-extra-treasure-2068.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Audio for sound effects -->
-    <audio id="correct-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="wrong-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="purchase-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-cash-register-purchase-875.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="tagna-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-magic-sparkle-sweep-283.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Theme-specific sounds -->
-    <audio id="earth-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-forest-ambience-573.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="sea-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-ocean-waves-loop-1244.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="sky-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-wind-in-the-leaves-1243.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="space-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-scifi-swoosh-802.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Lucky Cat Sound -->
-    <audio id="lucky-cat-sound" preload="auto">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-cat-meow-117.mp3" type="audio/mpeg">
-    </audio>
-
     <script>
+        // ====== SOUND SYSTEM ======
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+        
+        // Function to create simple tones for sound effects
+        function createSound(frequency, duration, type = 'sine') {
+            if (!soundEnabled) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log("Web Audio API not supported:", e);
+            }
+        }
+
+        // Predefined sound effects using Web Audio API
+        const soundEffects = {
+            correct: () => {
+                // Happy ascending tones
+                createSound(523.25, 0.3); // C5
+                setTimeout(() => createSound(659.25, 0.3), 150); // E5
+                setTimeout(() => createSound(783.99, 0.5), 300); // G5
+            },
+            
+            wrong: () => {
+                // Sad descending tones
+                createSound(783.99, 0.2); // G5
+                setTimeout(() => createSound(659.25, 0.2), 100); // E5
+                setTimeout(() => createSound(523.25, 0.4), 200); // C5
+            },
+            
+            purchase: () => {
+                // Cash register-like sound
+                createSound(1318.51, 0.1, 'square'); // E6
+                setTimeout(() => createSound(1046.50, 0.2, 'square'), 100); // C6
+                setTimeout(() => createSound(1567.98, 0.3, 'square'), 200); // G6
+            },
+            
+            tagna: () => {
+                // Magical sparkle sound
+                createSound(1046.50, 0.1); // C6
+                setTimeout(() => createSound(1318.51, 0.1), 50); // E6
+                setTimeout(() => createSound(1567.98, 0.1), 100); // G6
+                setTimeout(() => createSound(2093.00, 0.2), 150); // C7
+            },
+            
+            click: () => {
+                // Simple click
+                createSound(1000, 0.05, 'sawtooth');
+            },
+            
+            start: () => {
+                // Game start fanfare
+                createSound(523.25, 0.2); // C5
+                setTimeout(() => createSound(659.25, 0.2), 100); // E5
+                setTimeout(() => createSound(783.99, 0.2), 200); // G5
+                setTimeout(() => createSound(1046.50, 0.3), 300); // C6
+            },
+            
+            levelup: () => {
+                // Level up sound
+                createSound(659.25, 0.2); // E5
+                setTimeout(() => createSound(783.99, 0.2), 100); // G5
+                setTimeout(() => createSound(987.77, 0.2), 200); // B5
+                setTimeout(() => createSound(1318.51, 0.3), 300); // E6
+            },
+            
+            gameover: () => {
+                // Game over sound
+                createSound(523.25, 0.3); // C5
+                setTimeout(() => createSound(493.88, 0.3), 150); // B4
+                setTimeout(() => createSound(440.00, 0.5), 300); // A4
+            },
+            
+            mystery: () => {
+                // Mystery box sound
+                createSound(659.25, 0.1, 'triangle'); // E5
+                setTimeout(() => createSound(830.61, 0.1, 'triangle'), 50); // G#5
+                setTimeout(() => createSound(987.77, 0.1, 'triangle'), 100); // B5
+                setTimeout(() => createSound(1318.51, 0.2, 'triangle'), 150); // E6
+            }
+        };
+
+        // Function to play sound with fallback
+        function playSound(soundName) {
+            if (!soundEnabled) return;
+            
+            // First try to play the Web Audio API version
+            if (soundEffects[soundName]) {
+                soundEffects[soundName]();
+            }
+        }
+
+        // Function to toggle sound
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            return soundEnabled;
+        }
+
         // ====== GAME STATE ======
         const gameState = {
             // Core Game State
@@ -2097,7 +1998,7 @@
             totalPets: 0,
             mysteryBoxesOpened: 0,
             
-            // Sound
+            // Sound - use our Web Audio API flag
             soundEnabled: true,
             musicEnabled: false,
             musicVolume: 0.5,
@@ -2109,15 +2010,18 @@
             isSelecting: false,
             
             // Music state
-            musicInitialized: false,
-            
-            // Redeem codes
-            redeemedCodes: [],
-            
-            // Lucky Cat timer
-            luckyCatTimer: null,
-            luckyCatGoldInterval: null
+            musicInitialized: false
         };
+
+        // Update the global soundEnabled flag when game state changes
+        Object.defineProperty(gameState, 'soundEnabled', {
+            get() {
+                return soundEnabled;
+            },
+            set(value) {
+                soundEnabled = value;
+            }
+        });
 
         // ====== SHOP ITEMS DATABASE ======
         const shopItems = {
@@ -2207,21 +2111,6 @@
                     bonusType: 'streak',
                     bonusAmount: 100,
                     bonusCondition: 3
-                },
-                // Lucky Cat (Limited Edition - Only available via redeem code)
-                { 
-                    id: 'lucky_cat', 
-                    name: 'Lucky Cat (Limited)', 
-                    price: 0, 
-                    icon: 'fas fa-cat', 
-                    color: '#FF69B4', 
-                    effect: '+200 Gold every 5 seconds + Helps find gold', 
-                    rarity: 'limited',
-                    bonusType: 'timer',
-                    bonusAmount: 200,
-                    bonusCondition: 5, // seconds
-                    hidden: true, // Not visible in shop until unlocked
-                    redeemCode: 'EDMARKISADMIN'
                 }
             ],
             
@@ -2306,29 +2195,18 @@
             // Apply saved theme
             applyTheme(gameState.activeTheme);
             
-            // Start Lucky Cat timer if equipped
-            if (gameState.equippedPet === 'lucky_cat') {
-                startLuckyCatTimer();
-            }
+            // Initialize shop items
+            loadShopItems();
         });
 
         function initializeAudio() {
             // Create audio context on first user interaction
             const initAudio = () => {
                 try {
-                    // Try to play a silent sound to unlock audio
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.setValueAtTime(1, audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
-                    
-                    oscillator.start();
-                    oscillator.stop(audioContext.currentTime + 0.1);
+                    // Resume audio context
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
                     
                     console.log("Audio context initialized");
                     
@@ -2385,7 +2263,7 @@
             if (savedPet) gameState.equippedPet = savedPet;
             
             const savedSound = localStorage.getItem('gtgSoundEnabled');
-            if (savedSound !== null) gameState.soundEnabled = savedSound === 'true';
+            if (savedSound !== null) soundEnabled = savedSound === 'true';
             
             const savedMusic = localStorage.getItem('gtgMusicEnabled');
             if (savedMusic !== null) gameState.musicEnabled = savedMusic === 'true';
@@ -2401,9 +2279,6 @@
             
             const savedActiveTheme = localStorage.getItem('gtgActiveTheme');
             if (savedActiveTheme) gameState.activeTheme = savedActiveTheme;
-            
-            const savedRedeemedCodes = localStorage.getItem('gtgRedeemedCodes');
-            if (savedRedeemedCodes) gameState.redeemedCodes = JSON.parse(savedRedeemedCodes);
             
             // Calculate total pets
             gameState.totalPets = gameState.purchasedItems.filter(item => 
@@ -2424,70 +2299,12 @@
             localStorage.setItem('gtgEquippedAvatar', gameState.equippedAvatar);
             localStorage.setItem('gtgEquippedFrame', gameState.equippedFrame);
             localStorage.setItem('gtgEquippedPet', gameState.equippedPet);
-            localStorage.setItem('gtgSoundEnabled', gameState.soundEnabled);
+            localStorage.setItem('gtgSoundEnabled', soundEnabled);
             localStorage.setItem('gtgMusicEnabled', gameState.musicEnabled);
             localStorage.setItem('gtgMusicVolume', gameState.musicVolume);
             localStorage.setItem('gtgMysteryBoxesOpened', gameState.mysteryBoxesOpened);
             localStorage.setItem('gtgPurchasedThemes', JSON.stringify(gameState.purchasedThemes));
             localStorage.setItem('gtgActiveTheme', gameState.activeTheme);
-            localStorage.setItem('gtgRedeemedCodes', JSON.stringify(gameState.redeemedCodes));
-        }
-
-        // ====== REDEEM CODE SYSTEM ======
-        function showRedeemModal() {
-            document.getElementById('redeem-modal').style.display = 'flex';
-        }
-
-        function redeemCode() {
-            const codeInput = document.getElementById('redeem-code-input');
-            const code = codeInput.value.trim().toUpperCase();
-            
-            if (!code) {
-                showNotification('Please enter a code!', 'error');
-                return;
-            }
-            
-            // Check if code already redeemed
-            if (gameState.redeemedCodes.includes(code)) {
-                showNotification('Code already redeemed!', 'error');
-                return;
-            }
-            
-            // Check for valid codes
-            if (code === 'EDMARKISADMIN') {
-                // Unlock Lucky Cat pet
-                gameState.redeemedCodes.push(code);
-                
-                // Add Lucky Cat to purchased items if not already there
-                if (!gameState.purchasedItems.includes('lucky_cat')) {
-                    gameState.purchasedItems.push('lucky_cat');
-                    gameState.totalPets++;
-                    
-                    // Show success message
-                    showNotification('Lucky Cat unlocked! Check Pets tab to claim!', 'success');
-                    
-                    // Play lucky sound
-                    if (gameState.soundEnabled) {
-                        const luckySound = document.getElementById('lucky-cat-sound');
-                        if (luckySound) {
-                            luckySound.currentTime = 0;
-                            luckySound.volume = 0.7;
-                            luckySound.play().catch(e => console.log("Lucky cat sound play failed:", e));
-                        }
-                    }
-                    
-                    // Refresh shop to show the new pet
-                    loadShopItems();
-                    
-                    // Close modal
-                    document.getElementById('redeem-modal').style.display = 'none';
-                    codeInput.value = '';
-                    
-                    saveGameState();
-                }
-            } else {
-                showNotification('Invalid code!', 'error');
-            }
         }
 
         // ====== WELCOME SYSTEM ======
@@ -2545,9 +2362,6 @@
             // Stop any playing music
             stopBackgroundMusic();
             
-            // Stop Lucky Cat timer
-            stopLuckyCatTimer();
-            
             // Update displays
             updateDisplays();
             updateLivesDisplay();
@@ -2602,6 +2416,9 @@
             document.getElementById('start-btn').disabled = true;
             gameState.totalGames++;
             
+            // Play start sound
+            playSound('start');
+            
             // Apply pet effects
             updatePetEffects();
             
@@ -2610,11 +2427,6 @@
                 gameState.musicEnabled = true;
                 updateMusicControls();
                 startBackgroundMusic();
-            }
-            
-            // Start Lucky Cat timer if equipped
-            if (gameState.equippedPet === 'lucky_cat') {
-                startLuckyCatTimer();
             }
             
             nextLevel();
@@ -2638,24 +2450,46 @@
                     console.log("Background music started");
                     updateMusicButton(true);
                 }).catch(error => {
-                    console.log("Music play failed, will retry on interaction:", error);
-                    // Show notification and retry on next interaction
-                    showNotification('Click to enable background music!', 'info');
-                    
-                    const retryPlay = () => {
-                        bgMusic.play().then(() => {
-                            console.log("Background music started after interaction");
-                            updateMusicButton(true);
-                            showNotification('Music started! Enjoy!', 'success');
-                        }).catch(e => {
-                            console.log("Still can't play music:", e);
-                        });
-                        document.removeEventListener('click', retryPlay);
-                    };
-                    
-                    document.addEventListener('click', retryPlay, { once: true });
+                    console.log("Music play failed, will use Web Audio API:", error);
+                    // If external music fails, use Web Audio API for background tones
+                    startWebAudioBackgroundMusic();
                 });
             }
+        }
+
+        function startWebAudioBackgroundMusic() {
+            // Create a simple background music using Web Audio API
+            console.log("Starting Web Audio background music");
+            
+            // Create oscillator for background music
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 261.63; // C4
+            
+            gainNode.gain.value = 0.05; // Very quiet background
+            
+            // Create a simple melody pattern
+            let currentTime = audioContext.currentTime;
+            
+            // Play a simple 4-note pattern
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            
+            notes.forEach((freq, index) => {
+                oscillator.frequency.setValueAtTime(freq, currentTime + index * 0.5);
+            });
+            
+            oscillator.start();
+            
+            // Store reference to stop later
+            gameState.backgroundOscillator = oscillator;
+            gameState.backgroundGainNode = gainNode;
+            
+            updateMusicButton(true);
         }
 
         function stopBackgroundMusic() {
@@ -2663,8 +2497,15 @@
             if (bgMusic) {
                 bgMusic.pause();
                 bgMusic.currentTime = 0;
-                updateMusicButton(false);
             }
+            
+            // Also stop Web Audio API background music if playing
+            if (gameState.backgroundOscillator) {
+                gameState.backgroundOscillator.stop();
+                gameState.backgroundOscillator = null;
+            }
+            
+            updateMusicButton(false);
         }
 
         function updateMusicButton(isPlaying) {
@@ -2700,9 +2541,6 @@
             // Apply pet luck effects
             applyPetLuckEffects();
             
-            // Apply Lucky Cat help if equipped
-            applyLuckyCatHelp();
-            
             // Update UI
             updateLevelUI();
             generateOptions();
@@ -2733,32 +2571,6 @@
             }
         }
 
-        function applyLuckyCatHelp() {
-            // Apply Lucky Cat help - reduces options to 2 (including the gold)
-            if (gameState.equippedPet === 'lucky_cat') {
-                // If there are more than 2 options, Lucky Cat helps by revealing wrong options
-                if (gameState.optionsCount > 2) {
-                    // Keep only 2 options: the gold and one random wrong option
-                    const allOptions = Array.from({length: gameState.optionsCount}, (_, i) => i);
-                    const wrongOptions = allOptions.filter(i => i !== gameState.goldPosition);
-                    
-                    // Select one wrong option to keep
-                    const wrongToKeep = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
-                    
-                    // Mark all other wrong options as revealed (eliminated)
-                    const optionsToReveal = wrongOptions.filter(i => i !== wrongToKeep);
-                    optionsToReveal.forEach(option => {
-                        if (!gameState.revealedOptions.includes(option)) {
-                            gameState.revealedOptions.push(option);
-                        }
-                    });
-                    
-                    // Show message about Lucky Cat help
-                    showNotification('Lucky Cat helps you! Only 2 options remain.', 'info');
-                }
-            }
-        }
-
         function updateLevelUI() {
             const difficulty = gameState.level < 10 ? 'Easy' : gameState.level < 30 ? 'Medium' : gameState.level < 60 ? 'Hard' : 'Extreme';
             document.getElementById('difficulty-info').textContent = `Difficulty: ${difficulty} (${gameState.optionsCount} options)`;
@@ -2771,10 +2583,6 @@
                 // Special message for Music Dragon
                 if (pet.id === 'music_dragon' && gameState.musicEnabled) {
                     instruction += ` <span style="color:#9c88ff"><i class="fas fa-music"></i></span>`;
-                }
-                // Special message for Lucky Cat
-                if (pet.id === 'lucky_cat') {
-                    instruction += ` <span style="color:#FF69B4"><i class="fas fa-cat"></i></span>`;
                 }
             }
             document.getElementById('instruction').innerHTML = instruction;
@@ -2904,9 +2712,8 @@
             }
             document.getElementById('instruction').innerHTML = message;
             
-            // Play satisfying victory music instead of popup
-            playVictoryMusic();
-            playVictoryAnimation();
+            // Play correct sound
+            playSound('correct');
             
             // Add gold effect
             showGoldEffect(goldEarned, "Gold Earned!");
@@ -2914,28 +2721,16 @@
             // Show notification
             showNotification(`Correct! +${goldEarned} Gold`, 'success');
             
-            // Auto-proceed to next level after delay (while victory music plays)
+            // Play level up sound
+            playSound('levelup');
+            
+            // Auto-proceed to next level after delay
             setTimeout(() => {
                 gameState.isSelecting = false;
                 nextLevel();
             }, 2000);
             
             saveGameState();
-        }
-
-        function playVictoryMusic() {
-            if (!gameState.soundEnabled) return;
-            
-            try {
-                const victorySound = document.getElementById('victory-sound');
-                if (victorySound) {
-                    victorySound.currentTime = 0;
-                    victorySound.volume = 0.7;
-                    victorySound.play().catch(e => console.log("Victory music play failed:", e));
-                }
-            } catch (e) {
-                console.log("Audio not supported");
-            }
         }
 
         function handleWrongGuess() {
@@ -3004,9 +2799,6 @@
             // Stop background music
             stopBackgroundMusic();
             
-            // Stop Lucky Cat timer
-            stopLuckyCatTimer();
-            
             // Update high score
             if (gameState.score > gameState.highScore) {
                 gameState.highScore = gameState.score;
@@ -3020,6 +2812,9 @@
             
             // Show game over modal
             document.getElementById('game-over').style.display = 'flex';
+            
+            // Play game over sound
+            playSound('gameover');
             
             // Update power-up buttons
             updatePowerUpButtons();
@@ -3054,75 +2849,11 @@
             }
         }
 
-        // ====== LUCKY CAT TIMER FUNCTIONS ======
-        function startLuckyCatTimer() {
-            const pet = shopItems.pets.find(p => p.id === 'lucky_cat');
-            if (!pet || gameState.equippedPet !== 'lucky_cat') return;
-            
-            // Clear any existing timer
-            stopLuckyCatTimer();
-            
-            // Show Lucky Cat effect
-            document.getElementById('lucky-cat-effect').style.display = 'block';
-            
-            // Start the gold generation interval
-            gameState.luckyCatGoldInterval = setInterval(() => {
-                if (gameState.gameActive) {
-                    // Add gold
-                    gameState.gold += pet.bonusAmount;
-                    gameState.totalGoldEarned += pet.bonusAmount;
-                    
-                    // Update display
-                    updateDisplays();
-                    
-                    // Show notification
-                    showLuckyCatGoldNotification(pet.bonusAmount);
-                    
-                    // Play cat sound
-                    if (gameState.soundEnabled) {
-                        const catSound = document.getElementById('lucky-cat-sound');
-                        if (catSound) {
-                            catSound.currentTime = 0;
-                            catSound.volume = 0.5;
-                            catSound.play().catch(e => console.log("Cat sound play failed:", e));
-                        }
-                    }
-                    
-                    saveGameState();
-                }
-            }, pet.bonusCondition * 1000); // Convert seconds to milliseconds
-        }
-
-        function stopLuckyCatTimer() {
-            if (gameState.luckyCatGoldInterval) {
-                clearInterval(gameState.luckyCatGoldInterval);
-                gameState.luckyCatGoldInterval = null;
-            }
-            
-            // Hide Lucky Cat effect
-            document.getElementById('lucky-cat-effect').style.display = 'none';
-            
-            // Hide notification
-            document.getElementById('lucky-cat-notification').style.display = 'none';
-        }
-
-        function showLuckyCatGoldNotification(amount) {
-            const notification = document.getElementById('lucky-cat-notification');
-            notification.innerHTML = `<i class="fas fa-cat"></i><span>+${amount} Gold from Lucky Cat!</span>`;
-            notification.style.display = 'flex';
-            
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
-        }
-
         // ====== SHOP SYSTEM ======
         function loadShopItems() {
             loadShopCategory('avatars', shopItems.avatars, 'avatar-items');
             loadShopCategory('frames', shopItems.frames, 'frame-items');
             loadShopCategory('pets', shopItems.pets, 'pet-items');
-            loadShopCategory('themes', shopItems.themes, 'themes-items');
         }
 
         function loadShopCategory(category, items, containerId) {
@@ -3132,21 +2863,11 @@
             container.innerHTML = '';
             
             items.forEach(item => {
-                // Skip hidden items (like Lucky Cat before redemption)
-                if (item.hidden && !gameState.purchasedItems.includes(item.id) && 
-                    !gameState.redeemedCodes.includes(item.redeemCode)) {
-                    return;
-                }
-                
-                const isPurchased = category === 'themes' ? 
-                    gameState.purchasedThemes.includes(item.id) : 
-                    gameState.purchasedItems.includes(item.id);
-                    
+                const isPurchased = gameState.purchasedItems.includes(item.id);
                 const isEquipped = 
                     (category === 'avatars' && gameState.equippedAvatar === item.id) ||
                     (category === 'frames' && gameState.equippedFrame === item.id) ||
-                    (category === 'pets' && gameState.equippedPet === item.id) ||
-                    (category === 'themes' && gameState.activeTheme === item.id);
+                    (category === 'pets' && gameState.equippedPet === item.id);
                 
                 const itemElement = document.createElement('div');
                 itemElement.className = `shop-item ${isPurchased ? 'purchased' : ''} ${isEquipped ? 'equipped' : ''} ${item.rarity ? 'rarity-' + item.rarity : ''}`;
@@ -3159,31 +2880,18 @@
                 let actionButton = '';
                 
                 if (!isPurchased) {
-                    // Special case for Lucky Cat (free but needs to be claimed)
-                    if (item.id === 'lucky_cat') {
-                        actionButton = `<button class="shop-item-action claim" onclick="claimLuckyCat()">
-                                Claim Pet
-                            </button>`;
-                    } else {
-                        actionButton = `<button class="shop-item-action" onclick="buyItem('${item.id}', '${category}', ${item.price})" ${gameState.gold < item.price ? 'disabled' : ''}>
-                                ${item.price === 0 ? 'Free' : 'Buy'}
-                            </button>`;
-                    }
+                    actionButton = `<button class="shop-item-action" onclick="buyItem('${item.id}', '${category}', ${item.price})" ${gameState.gold < item.price ? 'disabled' : ''}>
+                            ${item.price === 0 ? 'Free' : 'Buy'}
+                        </button>`;
                 } else {
                     if (isEquipped) {
                         actionButton = `<button class="shop-item-action equipped" disabled>
                                 Equipped
                             </button>`;
                     } else {
-                        if (category === 'themes') {
-                            actionButton = `<button class="shop-item-action equip" onclick="applyTheme('${item.id}')">
-                                Apply
-                            </button>`;
-                        } else {
-                            actionButton = `<button class="shop-item-action equip" onclick="equipItem('${item.id}', '${category}')">
+                        actionButton = `<button class="shop-item-action equip" onclick="equipItem('${item.id}', '${category}')">
                                 Equip
                             </button>`;
-                        }
                     }
                 }
                 
@@ -3197,7 +2905,7 @@
                     <div class="shop-item-title">${item.name}</div>
                     ${item.effect ? `<div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:5px; text-align:center;">${item.effect}</div>` : ''}
                     <div class="shop-item-price">
-                        ${item.price === 0 ? 'FREE' : `<i class="fas fa-coins"></i> ${item.price} Gold`}
+                        <i class="fas fa-coins"></i> ${item.price} Gold
                     </div>
                     ${actionButton}
                 `;
@@ -3205,48 +2913,13 @@
             });
         }
 
-        function claimLuckyCat() {
-            // Add Lucky Cat to purchased items
-            if (!gameState.purchasedItems.includes('lucky_cat')) {
-                gameState.purchasedItems.push('lucky_cat');
-                gameState.totalPets++;
-                
-                // Equip the Lucky Cat automatically
-                equipItem('lucky_cat', 'pets');
-                
-                // Show celebration
-                showNotification('Lucky Cat claimed! Meow! 🐱', 'success');
-                
-                // Play cat sound
-                if (gameState.soundEnabled) {
-                    const catSound = document.getElementById('lucky-cat-sound');
-                    if (catSound) {
-                        catSound.currentTime = 0;
-                        catSound.volume = 0.7;
-                        catSound.play().catch(e => console.log("Cat sound play failed:", e));
-                    }
-                }
-                
-                // Refresh shop
-                loadShopItems();
-                saveGameState();
-            }
-        }
-
         function buyItem(itemId, category, price) {
             if (gameState.gold >= price) {
                 gameState.gold -= price;
+                gameState.purchasedItems.push(itemId);
                 
-                if (category === 'themes') {
-                    gameState.purchasedThemes.push(itemId);
-                    // Auto-apply the theme
-                    applyTheme(itemId);
-                    showNotification(`Theme purchased and applied!`, 'success');
-                } else {
-                    gameState.purchasedItems.push(itemId);
-                    // Auto-equip the item
-                    equipItem(itemId, category);
-                }
+                // Auto-equip the item
+                equipItem(itemId, category);
                 
                 // Update pet count
                 if (category === 'pets' && itemId !== 'none') {
@@ -3280,35 +2953,16 @@
                                 }
                             }
                         }
-                        
-                        // If it's Lucky Cat, start the timer
-                        if (pet.id === 'lucky_cat' && gameState.gameActive) {
-                            startLuckyCatTimer();
-                        }
                     }
                 }
                 
-                if (category !== 'themes') {
-                    showNotification(`Purchased ${itemId}!`, 'success');
-                }
+                showNotification(`Purchased ${itemId}!`, 'success');
             } else {
                 showNotification(`Not enough gold! Need ${price}`, 'error');
             }
         }
 
         function equipItem(itemId, category) {
-            // Stop current pet effects if switching pets
-            if (category === 'pets') {
-                // Stop Music Dragon music
-                if (gameState.equippedPet === 'music_dragon') {
-                    stopBackgroundMusic();
-                }
-                // Stop Lucky Cat timer
-                if (gameState.equippedPet === 'lucky_cat') {
-                    stopLuckyCatTimer();
-                }
-            }
-            
             switch(category) {
                 case 'avatars':
                     gameState.equippedAvatar = itemId;
@@ -3321,16 +2975,11 @@
                     // Reset pet streak counter when changing pets
                     gameState.petStreakCounter = 0;
                     
-                    // Handle pet-specific actions
+                    // Handle Music Dragon specific actions
                     if (itemId === 'music_dragon') {
                         document.getElementById('music-controls').style.display = 'flex';
                         if (gameState.musicEnabled && gameState.gameActive) {
                             startBackgroundMusic();
-                        }
-                    } else if (itemId === 'lucky_cat') {
-                        // Start Lucky Cat timer if game is active
-                        if (gameState.gameActive) {
-                            startLuckyCatTimer();
                         }
                     } else {
                         // Stop music if switching from Music Dragon
@@ -3391,16 +3040,6 @@
                 showGoldEffect(-theme.price, "Theme Purchased!");
                 playSound('purchase');
                 showNotification(`${theme.name} purchased and applied!`, 'success');
-                
-                // Play theme sound
-                if (gameState.soundEnabled) {
-                    const themeSound = document.getElementById(`${themeId}-sound`);
-                    if (themeSound) {
-                        themeSound.currentTime = 0;
-                        themeSound.volume = 0.3;
-                        themeSound.play().catch(e => console.log("Theme sound play failed:", e));
-                    }
-                }
             } else {
                 showNotification(`Not enough gold! Need ${theme.price}`, 'error');
             }
@@ -3408,7 +3047,7 @@
 
         function applyTheme(themeId) {
             // Remove all theme classes
-            document.body.classList.remove('theme-earth', 'theme-sea', 'theme-sky', 'theme-space', 'theme-lucky-cat');
+            document.body.classList.remove('theme-earth', 'theme-sea', 'theme-sky', 'theme-space');
             
             // Add new theme class
             if (themeId !== 'default') {
@@ -3423,10 +3062,6 @@
             }
             
             saveGameState();
-            loadShopItems();
-            
-            // Update theme sound
-            updateThemeSound(themeId);
         }
 
         function createThemeEffects(themeId) {
@@ -3467,28 +3102,6 @@
             }
         }
 
-        function updateThemeSound(themeId) {
-            // Stop all theme sounds
-            const themeSounds = ['earth-sound', 'sea-sound', 'sky-sound', 'space-sound'];
-            themeSounds.forEach(soundId => {
-                const sound = document.getElementById(soundId);
-                if (sound) {
-                    sound.pause();
-                    sound.currentTime = 0;
-                }
-            });
-            
-            // Play theme sound if enabled
-            if (gameState.soundEnabled && themeId !== 'default') {
-                const themeSound = document.getElementById(`${themeId}-sound`);
-                if (themeSound) {
-                    themeSound.volume = 0.1;
-                    themeSound.loop = true;
-                    themeSound.play().catch(e => console.log("Theme sound play failed:", e));
-                }
-            }
-        }
-
         // ====== MYSTERY BOX SYSTEM ======
         function buyMysteryBox(type) {
             const prices = {
@@ -3513,6 +3126,7 @@
                 
                 showGoldEffect(-price, "Mystery Box!");
                 playSound('purchase');
+                playSound('mystery');
                 
                 showNotification(`Opened ${type} Mystery Box!`, 'success');
             } else {
@@ -3788,14 +3402,7 @@
             const optionsToEliminate = allOptions.filter(i => !optionsToKeep.includes(i));
             
             // Play Tagna sound
-            if (gameState.soundEnabled) {
-                const tagnaSound = document.getElementById('tagna-sound');
-                if (tagnaSound) {
-                    tagnaSound.currentTime = 0;
-                    tagnaSound.volume = 0.7;
-                    tagnaSound.play().catch(e => console.log("Tagna sound play failed:", e));
-                }
-            }
+            playSound('tagna');
             
             // Animate elimination of options
             animateTagnaElimination(optionsToEliminate, optionsToKeep);
@@ -3925,58 +3532,11 @@
             }, 1500);
         }
 
-        function playVictoryAnimation() {
-            // Add confetti effect
-            const confettiContainer = document.getElementById('confetti-container');
-            if (!confettiContainer) return;
-            
-            confettiContainer.innerHTML = '';
-            
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = `${Math.random() * 100}%`;
-                confetti.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confetti.style.animationDelay = `${Math.random() * 2}s`;
-                confettiContainer.appendChild(confetti);
-                
-                setTimeout(() => {
-                    confetti.remove();
-                }, 3000);
-            }
-        }
-
-        function playSound(soundName) {
-            if (!gameState.soundEnabled) return;
-            
-            try {
-                const audio = document.getElementById(`${soundName}-sound`);
-                if (audio) {
-                    audio.currentTime = 0;
-                    audio.play().catch(e => console.log("Audio play failed:", e));
-                }
-            } catch (e) {
-                console.log("Audio not supported");
-            }
-        }
-
-        function showRewardModal(gold, message) {
-            const rewardModal = document.getElementById('reward-modal');
-            const rewardAmount = document.getElementById('reward-amount');
-            const rewardMessage = document.getElementById('reward-message');
-            
-            if (!rewardModal || !rewardAmount || !rewardMessage) return;
-            
-            rewardAmount.textContent = `+${gold} Gold`;
-            rewardMessage.textContent = message;
-            rewardModal.style.display = 'flex';
-        }
-
         function updateSoundButton() {
             const icon = document.querySelector('#sound-toggle i');
             if (!icon) return;
             
-            if (gameState.soundEnabled) {
+            if (soundEnabled) {
                 icon.className = 'fas fa-volume-up';
             } else {
                 icon.className = 'fas fa-volume-mute';
@@ -4033,26 +3593,15 @@
                 loadShopItems();
             });
             document.getElementById('stats-btn').addEventListener('click', showStatsModal);
-            document.getElementById('redeem-btn').addEventListener('click', showRedeemModal);
-            
-            // Redeem code system
-            document.getElementById('redeem-code-btn').addEventListener('click', redeemCode);
-            document.getElementById('close-redeem-btn').addEventListener('click', function() {
-                document.getElementById('redeem-modal').style.display = 'none';
-                document.getElementById('redeem-code-input').value = '';
-            });
-            
-            document.getElementById('redeem-code-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    redeemCode();
-                }
-            });
             
             // Shop tabs
             const shopTabs = document.querySelectorAll('.shop-tab');
             shopTabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const tabId = this.dataset.tab;
+                    
+                    // Play button sound
+                    playSound('click');
                     
                     // Update active tab
                     shopTabs.forEach(t => t.classList.remove('active'));
@@ -4084,13 +3633,10 @@
             
             // Sound controls
             document.getElementById('sound-toggle').addEventListener('click', function() {
-                gameState.soundEnabled = !gameState.soundEnabled;
+                soundEnabled = toggleSound();
                 updateSoundButton();
                 saveGameState();
-                showNotification(`Sound ${gameState.soundEnabled ? 'enabled' : 'disabled'}`, 'info');
-                
-                // Update theme sound
-                updateThemeSound(gameState.activeTheme);
+                showNotification(`Sound ${soundEnabled ? 'enabled' : 'disabled'}`, 'info');
             });
             
             // Music controls
@@ -4127,19 +3673,24 @@
             });
             
             // Close modals when clicking outside
-            const modals = ['reward-modal', 'game-over', 'mystery-modal', 'stats-modal', 'welcome-modal', 'redeem-modal'];
+            const modals = ['reward-modal', 'game-over', 'mystery-modal', 'stats-modal', 'welcome-modal'];
             modals.forEach(modalId => {
                 const modal = document.getElementById(modalId);
                 if (modal) {
                     modal.addEventListener('click', function(e) {
                         if (e.target === this) {
                             this.style.display = 'none';
-                            if (modalId === 'redeem-modal') {
-                                document.getElementById('redeem-code-input').value = '';
-                            }
                         }
                     });
                 }
+            });
+            
+            // Add click sounds to buttons
+            const buttons = document.querySelectorAll('button:not(.sound-btn):not(.music-btn)');
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    playSound('click');
+                });
             });
         }
 
