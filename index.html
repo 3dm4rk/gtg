@@ -2,34 +2,406 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Treasure Hunt!</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Additional styles for enhanced pets gallery and divine avatars */
+        .god-tier-avatar {
+            border-color: #00ff00 !important;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5) !important;
+            animation: godTierPulse 2s infinite alternate !important;
+        }
+        
+        .cosmic-avatar {
+            border-color: #8a2be2 !important;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.5) !important;
+            animation: cosmicPulse 2s infinite alternate !important;
+        }
+        
+        .divine-avatar {
+            border-color: #00ffcc !important;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5) !important;
+            animation: divinePulse 2s infinite alternate !important;
+        }
+        
+        .avatar-aura {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .flame-aura {
+            background: radial-gradient(circle, rgba(0, 255, 204, 0.2) 0%, transparent 70%);
+            animation: flameAura 2s infinite alternate;
+        }
+        
+        .cosmic-aura {
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.2) 0%, transparent 70%);
+            animation: cosmicAura 3s infinite alternate;
+        }
+        
+        .rainbow-aura {
+            background: linear-gradient(45deg, 
+                rgba(255, 0, 0, 0.2) 0%, 
+                rgba(255, 165, 0, 0.2) 25%, 
+                rgba(255, 255, 0, 0.2) 50%, 
+                rgba(0, 255, 0, 0.2) 75%, 
+                rgba(0, 0, 255, 0.2) 100%);
+            animation: rainbowAura 4s infinite;
+        }
+        
+        .gold-aura {
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+            animation: goldGlow 2s infinite alternate;
+        }
+        
+        .pet-gallery-filter {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .filter-btn.active {
+            background: var(--theme-primary);
+            color: #000;
+            box-shadow: 0 0 10px var(--theme-primary);
+        }
+        
+        .avatar-attributes {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 3px solid var(--theme-primary);
+        }
+        
+        .attribute-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .attribute-label {
+            color: #aaa;
+        }
+        
+        .attribute-value {
+            color: var(--theme-primary);
+            font-weight: bold;
+        }
+        
+        .pet-count-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .avatar-count-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--theme-accent);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .divine-unlocked {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #00ffcc;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+        
+        .cosmic-unlocked {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #8a2be2;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+        
+        .pet-rarity-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        .rarity-filter-btn {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+        
+        .rarity-filter-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .rarity-filter-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .rarity-filter-btn.common {
+            border-color: #495057;
+        }
+        
+        .rarity-filter-btn.rare {
+            border-color: #4dabf7;
+        }
+        
+        .rarity-filter-btn.epic {
+            border-color: #cc5de8;
+        }
+        
+        .rarity-filter-btn.legendary {
+            border-color: var(--theme-primary);
+        }
+        
+        .rarity-filter-btn.limited {
+            border-color: #ff6b9d;
+        }
+        
+        .rarity-filter-btn.godtier {
+            border-color: #00ff00;
+        }
+        
+        .rarity-filter-btn.cosmic {
+            border-color: #8a2be2;
+        }
+        
+        .rarity-filter-btn.divine {
+            border-color: #00ffcc;
+        }
+        
+        .no-pets-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            grid-column: 1 / -1;
+        }
+        
+        .avatar-aura-preview {
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--theme-primary);
+        }
+        
+        .aura-effect-demo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+        }
+        
+        .flame-demo {
+            animation: flameAura 2s infinite alternate;
+            background: radial-gradient(circle, rgba(0, 255, 204, 0.3) 0%, transparent 70%);
+        }
+        
+        .cosmic-demo {
+            animation: cosmicAura 3s infinite alternate;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.3) 0%, transparent 70%);
+        }
+        
+        .rainbow-demo {
+            animation: rainbowAura 4s infinite;
+            background: linear-gradient(45deg, 
+                rgba(255, 0, 0, 0.3) 0%, 
+                rgba(255, 165, 0, 0.3) 25%, 
+                rgba(255, 255, 0, 0.3) 50%, 
+                rgba(0, 255, 0, 0.3) 75%, 
+                rgba(0, 0, 255, 0.3) 100%);
+        }
+        
+        .gold-demo {
+            animation: goldGlow 2s infinite alternate;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+        }
+        
+        @keyframes flameAura {
+            0% {
+                box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+            }
+            100% {
+                box-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc80;
+            }
+        }
+        
+        @keyframes cosmicAura {
+            0% {
+                box-shadow: 0 0 10px #8a2be2, 0 0 20px #8a2be2;
+            }
+            100% {
+                box-shadow: 0 0 20px #8a2be2, 0 0 40px #8a2be2, 0 0 60px #8a2be280;
+            }
+        }
+        
+        @keyframes rainbowAura {
+            0% { box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; }
+            17% { box-shadow: 0 0 10px #ff8800, 0 0 20px #ff8800; }
+            33% { box-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00; }
+            50% { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; }
+            66% { box-shadow: 0 0 10px #0088ff, 0 0 20px #0088ff; }
+            83% { box-shadow: 0 0 10px #8800ff, 0 0 20px #8800ff; }
+            100% { box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; }
+        }
+        
+        .aura-description {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        /* Enhanced Pets Gallery Modal Styles */
+        .pets-gallery-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .pets-gallery-content {
+            background: linear-gradient(145deg, var(--darker-bg), #16213e);
+            padding: 2.5rem;
+            border-radius: 1.25rem;
+            max-width: 70rem;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 3.125rem var(--theme-primary);
+            animation: modalSlideIn 0.4s ease;
+            border: 2px solid var(--theme-primary);
+            position: relative;
+        }
+        
+        .pets-gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .pets-gallery-title {
+            font-size: 2rem;
+            color: var(--theme-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+        
+        .total-pets-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 1.25rem;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        
+        .total-pets-count span {
+            color: var(--theme-primary);
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <!-- Theme Effects -->
     <div id="theme-effects"></div>
     
     <!-- Pet Effect Displays -->
-    <div class="lucky-cat-effect" id="lucky-cat-effect" style="display: none;">
-        <i class="fas fa-cat"></i>
+    <div class="pet-effects-container">
+        <div class="lucky-cat-effect" id="lucky-cat-effect" style="display: none;">
+            <i class="fas fa-cat"></i>
+        </div>
+        
+        <div class="meowl-effect-display" id="meowl-effect-display" style="display: none;">
+            <i class="fas fa-paw"></i>
+        </div>
+        
+        <div class="phoenix-effect-display" id="phoenix-effect-display" style="display: none;">
+            <i class="fas fa-fire"></i>
+        </div>
+        
+        <div class="turtle-effect-display" id="turtle-effect-display" style="display: none;">
+            <i class="fa-solid fa-clock"></i>
+        </div>
+        
+        <div class="cosmic-effect-display" id="cosmic-effect-display" style="display: none;">
+            <i class="fas fa-star"></i>
+        </div>
     </div>
     
-    <div class="meowl-effect-display" id="meowl-effect-display" style="display: none;">
-        <i class="fas fa-paw"></i>
-    </div>
-    
-    <div class="phoenix-effect-display" id="phoenix-effect-display" style="display: none;">
-        <i class="fas fa-fire"></i>
-    </div>
-    
-    <div class="turtle-effect-display" id="turtle-effect-display" style="display: none;">
-        <i class="fa-solid fa-clock"></i>
-    </div>
-    
-    <div class="cosmic-effect-display" id="cosmic-effect-display" style="display: none;">
-        <i class="fas fa-star"></i>
+    <!-- Time Stop Active Indicator -->
+    <div class="time-stop-active" id="time-stop-indicator" style="display: none;">
+        <i class="fas fa-hourglass-end"></i> Time Stop Active
     </div>
     
     <!-- Welcome Modal -->
@@ -68,8 +440,10 @@
                 You've unlocked the secret cosmic pet draw!
             </p>
             
-            <div class="cosmic-wheel" id="cosmic-wheel">
-                <!-- Wheel sections will be generated by JavaScript -->
+            <div class="cosmic-wheel-container">
+                <div class="cosmic-wheel" id="cosmic-wheel">
+                    <!-- Wheel sections will be generated by JavaScript -->
+                </div>
             </div>
             
             <div id="cosmic-result" style="margin: 20px 0; display: none;">
@@ -106,15 +480,33 @@
         </div>
     </div>
     
-    <!-- Pets Gallery Modal -->
+    <!-- Enhanced Pets Gallery Modal -->
     <div class="pets-gallery-modal" id="pets-gallery-modal">
         <div class="pets-gallery-content">
-            <h2 style="color: var(--theme-primary);">
-                <i class="fas fa-paw"></i> Pets Gallery
-            </h2>
-            <p style="color: var(--text-muted); margin-bottom: 20px;">
-                Browse all pets and their abilities. <span style="color: #51cf66;">Green</span> = Owned, <span style="color: #ff6b6b;">Red</span> = Not Owned
+            <div class="pets-gallery-header">
+                <h2 class="pets-gallery-title">
+                    <i class="fas fa-paw"></i> Complete Pets Gallery
+                </h2>
+                <div class="total-pets-count">
+                    Total Pets: <span id="total-pets-count">0</span>/<span id="total-pets-total">0</span>
+                </div>
+            </div>
+            
+            <p style="color: var(--text-muted); margin-bottom: 20px; text-align: center;">
+                Browse ALL pets including Common, Rare, Epic, Legendary, Limited Edition, Cosmic, and God Tier!
             </p>
+            
+            <!-- Rarity Filter -->
+            <div class="pet-rarity-filter">
+                <button class="rarity-filter-btn common active" data-rarity="all">All Pets</button>
+                <button class="rarity-filter-btn common" data-rarity="common">Common</button>
+                <button class="rarity-filter-btn rare" data-rarity="rare">Rare</button>
+                <button class="rarity-filter-btn epic" data-rarity="epic">Epic</button>
+                <button class="rarity-filter-btn legendary" data-rarity="legendary">Legendary</button>
+                <button class="rarity-filter-btn limited" data-rarity="limited">Limited</button>
+                <button class="rarity-filter-btn godtier" data-rarity="godtier">God Tier</button>
+                <button class="rarity-filter-btn cosmic" data-rarity="cosmic">Cosmic</button>
+            </div>
             
             <div class="pets-gallery" id="pets-gallery-container">
                 <!-- Pets will be loaded here -->
@@ -122,6 +514,46 @@
             
             <button class="welcome-btn" id="close-gallery-btn" style="margin-top: 20px; background: #555;">
                 <i class="fas fa-times"></i> Close Gallery
+            </button>
+        </div>
+    </div>
+    
+    <!-- Avatar Aura Demo Modal -->
+    <div class="hint-modal" id="aura-demo-modal">
+        <div class="hint-content">
+            <h3 style="color: #00ffcc;"><i class="fas fa-magic"></i> Divine Aura Effects</h3>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                Divine avatars grant special aura effects that enhance your gameplay:
+            </p>
+            
+            <div class="avatar-aura-preview">
+                <div class="aura-effect-demo" id="aura-demo-effect"></div>
+                <i class="fas fa-user" style="font-size: 3rem; color: white; z-index: 2;"></i>
+            </div>
+            
+            <div class="aura-description" id="aura-description">
+                Select an aura type to preview
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 20px 0;">
+                <button class="rarity-filter-btn" onclick="showAuraDemo('flame')" style="border-color: #00ffcc;">Blue Flame Aura</button>
+                <button class="rarity-filter-btn" onclick="showAuraDemo('cosmic')" style="border-color: #8a2be2;">Cosmic Aura</button>
+                <button class="rarity-filter-btn" onclick="showAuraDemo('rainbow')" style="border-color: #ff0000;">Rainbow Aura</button>
+                <button class="rarity-filter-btn" onclick="showAuraDemo('gold')" style="border-color: #FFD700;">Golden Aura</button>
+            </div>
+            
+            <div class="aura-description">
+                <strong>Effects:</strong>
+                <ul style="text-align: left; margin-top: 10px;">
+                    <li>Aura effects apply to your avatar display</li>
+                    <li>Option selection glows with aura color</li>
+                    <li>Divine blessings increase gold rewards</li>
+                    <li>Higher tier = more powerful effects</li>
+                </ul>
+            </div>
+            
+            <button class="welcome-btn" id="close-aura-demo-btn" style="margin-top: 20px; background: #555;">
+                <i class="fas fa-times"></i> Close Preview
             </button>
         </div>
     </div>
@@ -141,6 +573,46 @@
             </p>
             <button class="welcome-btn" id="close-timer-btn" style="background: linear-gradient(to right, #ff0000, #ff6b6b); color: white;">
                 <i class="fas fa-redo"></i> Play Again
+            </button>
+        </div>
+    </div>
+    
+    <!-- Mobile Menu -->
+    <div class="mobile-menu-btn" id="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+    </div>
+    
+    <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+            <h3>Game Menu</h3>
+            <button class="mobile-menu-close" id="mobile-menu-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-menu-items">
+			<button class="mobile-menu-item" id="mobile-rps-btn" style="display: none;">
+				<i class="fas fa-fist-raised"></i> Boss Battle
+			</button>
+            <button class="mobile-menu-item" id="mobile-shop-btn">
+                <i class="fas fa-shopping-cart"></i> Shop
+            </button>
+            <button class="mobile-menu-item" id="mobile-stats-btn">
+                <i class="fas fa-chart-line"></i> Stats
+            </button>
+            <button class="mobile-menu-item" id="mobile-gallery-btn">
+                <i class="fas fa-paw"></i> Pets Gallery
+            </button>
+            <button class="mobile-menu-item" id="mobile-aura-demo-btn">
+                <i class="fas fa-magic"></i> Aura Demo
+            </button>
+            <button class="mobile-menu-item" id="mobile-redeem-btn">
+                <i class="fas fa-gift"></i> Redeem Code
+            </button>
+            <button class="mobile-menu-item" id="mobile-save-btn">
+                <i class="fas fa-save"></i> Save Game
+            </button>
+            <button class="mobile-menu-item" id="mobile-help-btn">
+                <i class="fas fa-question-circle"></i> Help
             </button>
         </div>
     </div>
@@ -281,7 +753,7 @@
                                 <div class="power-up-cost">
                                     <i class="fas fa-coins"></i> 15 Gold
                                 </div>
-                                <div class="power-up-description" style="font-size:0.7rem; color:#aaa; text-align:center;">
+                                <div class="power-up-description">
                                     Keep 2 options including gold
                                 </div>
                                 <button class="power-up-action" id="tagna-btn" onclick="usePowerUp('tagna')">
@@ -326,6 +798,12 @@
                         <button class="btn btn-gallery" id="gallery-btn">
                             <i class="fas fa-paw"></i> Pets Gallery
                         </button>
+                        <button class="btn btn-gallery" id="aura-demo-btn">
+                            <i class="fas fa-magic"></i> Aura Demo
+                        </button>
+						<button class="btn btn-gallery" id="rps-btn" style="display: none;">
+    <i class="fas fa-fist-raised"></i> Boss Battle
+</button>
                     </div>
                 </div>
             </div>
@@ -339,14 +817,14 @@
                         <div class="shop-balance">
                             <i class="fas fa-coins"></i>
                             <span id="shop-gold-display">50</span>
-                            <span style="margin: 0 10px;">|</span>
+                            <span class="balance-separator">|</span>
                             <i class="fas fa-gem diamond-currency"></i>
                             <span id="shop-diamonds-display" class="diamond-currency">0</span>
                         </div>
                     </div>
                     
                     <div class="shop-tabs">
-                        <button class="shop-tab active" data-tab="customization">Customization</button>
+                        <button class="shop-tab active" data-tab="customization">Avatars & Frames</button>
                         <button class="shop-tab" data-tab="pets">Pets</button>
                         <button class="shop-tab" data-tab="powerups">Power-ups</button>
                         <button class="shop-tab" data-tab="mystery">Mystery Boxes</button>
@@ -358,7 +836,10 @@
                         <!-- Customization Tab -->
                         <div class="shop-tab-content active" id="customization-tab">
                             <div class="shop-category">
-                                <div class="category-title">Avatars</div>
+                                <div class="category-title">Avatars <span id="avatars-owned-count" class="avatar-count-badge" style="position: relative; top: -2px; margin-left: 10px;">0/8</span></div>
+                                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+                                    Divine avatars grant blessings and special aura effects!
+                                </p>
                                 <div class="shop-items" id="avatar-items">
                                     <!-- Avatar items will be generated by JavaScript -->
                                 </div>
@@ -375,7 +856,10 @@
                         <!-- Pets Tab -->
                         <div class="shop-tab-content" id="pets-tab">
                             <div class="shop-category">
-                                <div class="category-title">Companion Pets</div>
+                                <div class="category-title">Companion Pets <span id="pets-owned-count" class="pet-count-badge" style="position: relative; top: -2px; margin-left: 10px;">0/22</span></div>
+                                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+                                    Pets provide passive bonuses and special abilities!
+                                </p>
                                 <div class="shop-items" id="pet-items">
                                     <!-- Pet items will be generated by JavaScript -->
                                 </div>
@@ -450,7 +934,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 250 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Contains random rewards!
                                         </div>
                                         <button class="shop-item-action" onclick="buyMysteryBox('epic')" id="mystery-box-btn">
@@ -466,7 +950,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 1000 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Guaranteed epic+ rewards!
                                         </div>
                                         <button class="shop-item-action" onclick="buyMysteryBox('legendary')" id="legendary-chest-btn">
@@ -481,9 +965,9 @@
                                         </div>
                                         <div class="shop-item-title">Cosmic Mystery Box</div>
                                         <div class="shop-item-price">
-                                            <i class="fas fa-coins"></i> 50000 Gold
+                                            <i class="fas fa-coins"></i> 1,000,000 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             0.3% chance for Cosmic Dragon pet!
                                         </div>
                                         <button class="shop-item-action" onclick="buyMysteryBox('cosmic')" id="cosmic-mystery-box-btn">
@@ -495,6 +979,22 @@
                         </div>
                         
                         <!-- Extensions Tab -->
+						<!-- Add this to the extensions tab -->
+						<div class="shop-item cosmic" id="rps-extension-item">
+							<div class="shop-item-icon">
+								<i class="fas fa-fist-raised"></i>
+							</div>
+							<div class="shop-item-title">Rock Paper Scissors Battle</div>
+							<div class="shop-item-price">
+								<i class="fas fa-coins"></i> 1,000,000 Gold
+							</div>
+							<div class="shop-item-description">
+								Unlock boss battles! Challenge powerful bosses in RPS duels!
+							</div>
+							<button class="shop-item-action" onclick="unlockRockPaperScissors()" id="unlock-rps-btn">
+								Unlock
+							</button>
+						</div>
                         <div class="shop-tab-content" id="extensions-tab">
                             <div class="shop-category">
                                 <div class="category-title">Game Extensions</div>
@@ -507,7 +1007,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 5000 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Unlock 50 additional levels!
                                         </div>
                                         <button class="shop-item-action" onclick="buyExtension('levelExtension')" id="extension-btn">
@@ -523,7 +1023,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 50000 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Unlock unlimited levels! (101-999)
                                         </div>
                                         <button class="shop-item-action" onclick="buyExtension('megaLevelExtension')" id="mega-extension-btn">
@@ -547,7 +1047,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 3500 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Natural green theme +5% gold bonus
                                         </div>
                                         <button class="shop-item-action" onclick="buyTheme('earth')" id="earth-theme-btn">
@@ -563,7 +1063,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 4500 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Ocean blue theme +10% gold bonus
                                         </div>
                                         <button class="shop-item-action" onclick="buyTheme('sea')" id="sea-theme-btn">
@@ -579,7 +1079,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 7500 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Sky blue theme +15% gold bonus
                                         </div>
                                         <button class="shop-item-action" onclick="buyTheme('sky')" id="sky-theme-btn">
@@ -595,7 +1095,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-coins"></i> 10000 Gold
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Cosmic space theme +20% gold bonus
                                         </div>
                                         <button class="shop-item-action" onclick="buyTheme('space')" id="space-theme-btn">
@@ -611,7 +1111,7 @@
                                         <div class="shop-item-price">
                                             <i class="fas fa-gem diamond-currency"></i> 50 Diamonds
                                         </div>
-                                        <div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:10px; text-align:center;">
+                                        <div class="shop-item-description">
                                             Ultimate cosmic theme +30% gold bonus
                                         </div>
                                         <button class="shop-item-action" onclick="buyTheme('cosmic')" id="cosmic-theme-btn">
@@ -672,7 +1172,7 @@
         <div class="hint-modal" id="stats-modal">
             <div class="hint-content">
                 <h3><i class="fas fa-chart-line"></i> Player Stats</h3>
-                <div style="margin: 20px 0;">
+                <div class="stats-container">
                     <p>Total Games: <span id="stats-total-games" style="color: var(--theme-primary);">0</span></p>
                     <p>Total Gold Earned: <span id="stats-total-gold" style="color: var(--theme-primary);">0</span></p>
                     <p>Correct Guesses: <span id="stats-correct-guesses" style="color: var(--theme-primary);">0</span></p>
@@ -680,40 +1180,455 @@
                     <p>Accuracy: <span id="stats-accuracy" style="color: var(--theme-primary);">0%</span></p>
                     <p>Highest Streak: <span id="stats-highest-streak" style="color: var(--theme-primary);">0</span></p>
                     <p>Pets Collected: <span id="stats-pets" style="color: var(--theme-primary);">0</span></p>
-                    <p>Mystery Boxes Opened: <span id="stats-mystery-boxes" style="color: var(--theme-primary);">0</span></p>
+                    <p>Avatars Owned: <span id="stats-avatars" style="color: var(--theme-primary);">0</span></p>
+                    <p>Mystery Boxes: <span id="stats-mystery-boxes" style="color: var(--theme-primary);">0</span></p>
                 </div>
-                <button class="btn" id="close-stats-btn" style="background:linear-gradient(to right, #868e96, #495057);">
+                <button class="btn btn-start" id="close-stats-btn" style="margin-top: 20px;">
                     <i class="fas fa-times"></i> Close
                 </button>
             </div>
         </div>
         
-        <footer>
-            <p>GTG - Guess The Gold &copy; 2023 | Find the hidden gold and earn rewards!</p>
-        </footer>
+        <!-- Help Modal -->
+        <div class="hint-modal" id="help-modal">
+            <div class="hint-content">
+                <h3><i class="fas fa-question-circle"></i> Game Help & Tips</h3>
+                <div class="help-content">
+                    <h4>How to Play:</h4>
+                    <p>1. Click "Start Game" to begin</p>
+                    <p>2. Click on an option to reveal if it contains gold</p>
+                    <p>3. Find the gold to advance to the next level</p>
+                    <p>4. Wrong guesses cost lives</p>
+                    
+                    <h4>Power-ups:</h4>
+                    <p><strong>Hint</strong> - Reveals one wrong option</p>
+                    <p><strong>Extra Life</strong> - Buy additional lives</p>
+                    <p><strong>Tagna</strong> - Reduces options to 2 (including gold)</p>
+                    <p><strong>Gold Rush</strong> - Doubles gold on next correct guess</p>
+                    
+                    <h4>Pets & Avatars:</h4>
+                    <p>• Pets provide passive bonuses and special abilities</p>
+                    <p>• Divine avatars grant blessings and aura effects</p>
+                    <p>• Higher rarity = more powerful effects</p>
+                    
+                    <h4>Tips:</h4>
+                    <p>• Use pets and avatars strategically</p>
+                    <p>• Save gold for permanent upgrades</p>
+                    <p>• Watch for patterns in gold placement</p>
+                    <p>• Use power-ups when stuck on difficult levels</p>
+                </div>
+                <button class="btn btn-start" id="close-help-btn" style="margin-top: 20px;">
+                    <i class="fas fa-times"></i> Close Help
+                </button>
+            </div>
+        </div>
     </div>
-
-    <!-- Confetti Container -->
-    <div class="confetti-container" id="confetti-container"></div>
-
+    
     <!-- Audio elements -->
-    <audio id="background-music" loop preload="auto">
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    <audio id="background-music" loop>
+        <source src="" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Meowl Special Music -->
-    <audio id="meowl-music" loop preload="auto">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+    <audio id="meowl-music" loop>
+        <source src="" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Cosmic Music -->
-    <audio id="cosmic-music" loop preload="auto">
-        <source src="https://assets.mixkit.co/music/preview/mixkit-space-game-668.mp3" type="audio/mpeg">
+    <audio id="cosmic-music" loop>
+        <source src="" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-
+    
+    <!-- Game Data Export/Import -->
+    <div style="display: none;">
+        <button id="export-btn" onclick="exportGameData()">Export</button>
+        <button id="import-btn" onclick="importGameData()">Import</button>
+        <button id="reset-btn" onclick="resetGame()">Reset</button>
+    </div>
+    
     <script src="game.js"></script>
+    <script>
+        // Additional JavaScript for enhanced features
+        
+        // Enhanced Pets Gallery with filtering
+        function showEnhancedPetsGallery() {
+            const container = document.getElementById('pets-gallery-container');
+            container.innerHTML = '';
+            
+            // Get all pets from shopItems
+            const allPets = shopItems.pets;
+            
+            // Filter out the "none" pet
+            const displayPets = allPets.filter(pet => pet.id !== 'none');
+            
+            // Sort by rarity (custom order)
+            const rarityOrder = {
+                'common': 1,
+                'rare': 2,
+                'epic': 3,
+                'legendary': 4,
+                'limited': 5,
+                'godtier': 6,
+                'cosmic': 7
+            };
+            
+            displayPets.sort((a, b) => {
+                const aOrder = rarityOrder[a.rarity] || 0;
+                const bOrder = rarityOrder[b.rarity] || 0;
+                if (aOrder !== bOrder) return bOrder - aOrder;
+                return a.name.localeCompare(b.name);
+            });
+            
+            let totalPets = displayPets.length;
+            let ownedPets = 0;
+            
+            displayPets.forEach(pet => {
+                const isOwned = gameState.purchasedItems.includes(pet.id) || 
+                               (pet.isRedeemOnly && gameState.redeemedCodes.includes(pet.id === 'lucky_cat' ? 'EDMARKISADMIN' : 'ILOVEMEOWL')) ||
+                               (pet.isCosmic && pet.price === 0 && gameState.purchasedItems.includes(pet.id));
+                const isEquipped = gameState.equippedPet === pet.id;
+                const isRedeemOnly = pet.isRedeemOnly || (pet.id === 'meowl' && !gameState.purchasedItems.includes('meowl'));
+                const isCosmicHidden = pet.isCosmic && pet.price === 0 && !gameState.purchasedItems.includes(pet.id);
+                
+                if (isOwned) ownedPets++;
+                
+                // Skip hidden cosmic pets
+                if (isCosmicHidden) {
+                    totalPets--;
+                    return;
+                }
+                
+                const petElement = document.createElement('div');
+                petElement.className = `pet-gallery-item ${isOwned ? 'owned' : 'not-owned'} ${pet.rarity}`;
+                petElement.dataset.rarity = pet.rarity;
+                
+                if (isEquipped) {
+                    petElement.style.borderColor = '#4dabf7';
+                    petElement.style.boxShadow = '0 0 10px #4dabf7';
+                }
+                
+                if (pet.godTier) {
+                    petElement.classList.add('godtier');
+                }
+                
+                if (pet.isCosmic) {
+                    petElement.classList.add('cosmic');
+                }
+                
+                if (pet.rarity === 'limited') {
+                    petElement.classList.add('limited');
+                }
+                
+                let acquisitionInfo = '';
+                let acquisitionType = '';
+                
+                if (isRedeemOnly) {
+                    if (pet.id === 'lucky_cat') {
+                        acquisitionInfo = gameState.redeemedCodes.includes('EDMARKISADMIN') ? 
+                            '<div class="pet-acquisition unlocked"><i class="fas fa-check-circle"></i> Redeem Code: EDMARKISADMIN</div>' :
+                            '<div class="pet-acquisition locked"><i class="fas fa-lock"></i> Redeem Code: EDMARKISADMIN</div>';
+                        acquisitionType = 'redeem';
+                    } else if (pet.id === 'meowl') {
+                        acquisitionInfo = gameState.redeemedCodes.includes('ILOVEMEOWL') ? 
+                            '<div class="pet-acquisition unlocked"><i class="fas fa-check-circle"></i> Redeem Code: ILOVEMEOWL</div>' :
+                            '<div class="pet-acquisition locked"><i class="fas fa-lock"></i> Redeem Code: ILOVEMEOWL</div>';
+                        acquisitionType = 'redeem';
+                    }
+                } else if (pet.isCosmic && pet.price === 0) {
+                    acquisitionInfo = '<div class="pet-acquisition cosmic"><i class="fas fa-star"></i> Cosmic Pet Draw</div>';
+                    acquisitionType = 'cosmic';
+                } else if (pet.priceInDiamonds) {
+                    acquisitionInfo = `<div class="pet-acquisition diamond"><i class="fas fa-gem"></i> ${pet.price} Diamonds</div>`;
+                    acquisitionType = 'diamond';
+                } else if (pet.price === 0) {
+                    acquisitionInfo = '<div class="pet-acquisition gold"><i class="fas fa-coins"></i> Free</div>';
+                    acquisitionType = 'free';
+                } else {
+                    acquisitionInfo = `<div class="pet-acquisition gold"><i class="fas fa-coins"></i> ${pet.price} Gold</div>`;
+                    acquisitionType = 'gold';
+                }
+                
+                petElement.innerHTML = `
+                    <div class="pet-gallery-header">
+                        <div class="pet-gallery-icon" style="color:${pet.color}">
+                            <i class="${pet.icon}"></i>
+                        </div>
+                        <div class="pet-gallery-name">${pet.name}</div>
+                        <div class="pet-gallery-rarity rarity-${pet.rarity}">
+                            ${pet.rarity.toUpperCase()}${pet.isCosmic ? ' COSMIC' : ''}${pet.godTier ? ' GOD TIER' : ''}
+                        </div>
+                    </div>
+                    <div class="pet-gallery-body">
+                        <div class="pet-gallery-effect">
+                            <strong>Abilities:</strong> ${pet.effect}
+                        </div>
+                        ${pet.bonusType && pet.bonusType !== 'none' ? `
+                        <div class="pet-gallery-stats">
+                            <div class="pet-stat">
+                                <span class="stat-label">Type:</span>
+                                <span class="stat-value">${pet.bonusType}</span>
+                            </div>
+                            ${pet.bonusAmount > 0 ? `
+                            <div class="pet-stat">
+                                <span class="stat-label">Bonus:</span>
+                                <span class="stat-value">${pet.bonusAmount}</span>
+                            </div>
+                            ` : ''}
+                            ${pet.bonusCondition > 0 ? `
+                            <div class="pet-stat">
+                                <span class="stat-label">Condition:</span>
+                                <span class="stat-value">Every ${pet.bonusCondition} streaks</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                        ${acquisitionInfo}
+                    </div>
+                    <div class="pet-gallery-footer">
+                        ${isOwned ? 
+                            `<div class="pet-gallery-status owned">
+                                <i class="fas fa-check"></i> ${isEquipped ? 'EQUIPPED' : 'OWNED'}
+                            </div>` : 
+                            `<div class="pet-gallery-status not-owned">
+                                <i class="fas fa-times"></i> NOT OWNED
+                            </div>`
+                        }
+                    </div>
+                `;
+                
+                container.appendChild(petElement);
+            });
+            
+            // Update counts
+            document.getElementById('total-pets-count').textContent = ownedPets;
+            document.getElementById('total-pets-total').textContent = totalPets;
+            
+            // Add filter functionality
+            setupPetsGalleryFilters();
+            
+            // Show the modal
+            document.getElementById('pets-gallery-modal').style.display = 'flex';
+        }
+        
+        function setupPetsGalleryFilters() {
+            const filterButtons = document.querySelectorAll('.rarity-filter-btn');
+            const petItems = document.querySelectorAll('.pet-gallery-item');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Update active button
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    const filterRarity = button.dataset.rarity;
+                    
+                    // Filter pets
+                    petItems.forEach(item => {
+                        if (filterRarity === 'all') {
+                            item.style.display = 'block';
+                        } else if (item.dataset.rarity === filterRarity) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Check if any pets are visible
+                    const visiblePets = Array.from(petItems).filter(item => item.style.display !== 'none');
+                    if (visiblePets.length === 0) {
+                        const noPetsMessage = document.createElement('div');
+                        noPetsMessage.className = 'no-pets-message';
+                        noPetsMessage.textContent = `No ${filterRarity === 'all' ? '' : filterRarity + ' '}pets found.`;
+                        
+                        // Check if message already exists
+                        const existingMessage = document.querySelector('.no-pets-message');
+                        if (existingMessage) existingMessage.remove();
+                        
+                        // Add message to container
+                        const container = document.getElementById('pets-gallery-container');
+                        container.appendChild(noPetsMessage);
+                    } else {
+                        // Remove any existing message
+                        const existingMessage = document.querySelector('.no-pets-message');
+                        if (existingMessage) existingMessage.remove();
+                    }
+                });
+            });
+        }
+        
+        // Avatar Aura Demo Functions
+        function showAuraDemo(auraType) {
+            const auraDemo = document.getElementById('aura-demo-effect');
+            const description = document.getElementById('aura-description');
+            
+            // Clear previous classes
+            auraDemo.className = 'aura-effect-demo';
+            
+            switch(auraType) {
+                case 'flame':
+                    auraDemo.classList.add('flame-demo');
+                    description.innerHTML = '<strong>Blue Flame Aura</strong><br>Grants 65% blessings + options glow with blue flame';
+                    break;
+                case 'cosmic':
+                    auraDemo.classList.add('cosmic-demo');
+                    description.innerHTML = '<strong>Cosmic Aura</strong><br>Grants 75% blessings + cosmic effects + streak shield';
+                    break;
+                case 'rainbow':
+                    auraDemo.classList.add('rainbow-demo');
+                    description.innerHTML = '<strong>Rainbow Aura</strong><br>DOUBLE gold + rainbow effects + 5x streak bonus';
+                    break;
+                case 'gold':
+                    auraDemo.classList.add('gold-demo');
+                    description.innerHTML = '<strong>Golden Aura</strong><br>Grants 50% blessings every 3 streaks + divine aura';
+                    break;
+            }
+        }
+        
+        function showAuraDemoModal() {
+            showAuraDemo('flame'); // Default to flame aura
+            document.getElementById('aura-demo-modal').style.display = 'flex';
+        }
+        
+        // Override the original showPetsGallery function
+        window.showPetsGallery = showEnhancedPetsGallery;
+        
+        // Update shop items count
+        function updateShopCounts() {
+            // Update avatar count
+            const totalAvatars = shopItems.avatars.length;
+            const ownedAvatars = shopItems.avatars.filter(avatar => 
+                gameState.purchasedItems.includes(avatar.id) || avatar.price === 0
+            ).length;
+            document.getElementById('avatars-owned-count').textContent = `${ownedAvatars}/${totalAvatars}`;
+            
+            // Update pet count (excluding "none" pet)
+            const totalPets = shopItems.pets.filter(pet => pet.id !== 'none').length;
+            const ownedPets = shopItems.pets.filter(pet => 
+                pet.id !== 'none' && gameState.purchasedItems.includes(pet.id)
+            ).length;
+            document.getElementById('pets-owned-count').textContent = `${ownedPets}/${totalPets}`;
+            
+            // Update stats modal
+            document.getElementById('stats-avatars').textContent = `${ownedAvatars}/${totalAvatars}`;
+            document.getElementById('stats-pets').textContent = `${ownedPets}/${totalPets}`;
+        }
+        
+        // Override loadShopItems to include counts
+        const originalLoadShopItems = window.loadShopItems;
+        window.loadShopItems = function() {
+            originalLoadShopItems();
+            updateShopCounts();
+        };
+        
+        // Initialize enhanced features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add aura demo button functionality
+            const auraDemoBtn = document.getElementById('aura-demo-btn');
+            const mobileAuraDemoBtn = document.getElementById('mobile-aura-demo-btn');
+            const closeAuraDemoBtn = document.getElementById('close-aura-demo-btn');
+            const auraDemoModal = document.getElementById('aura-demo-modal');
+            
+            if (auraDemoBtn) {
+                auraDemoBtn.addEventListener('click', showAuraDemoModal);
+            }
+            
+            if (mobileAuraDemoBtn) {
+                mobileAuraDemoBtn.addEventListener('click', () => {
+                    showAuraDemoModal();
+                    document.getElementById('mobile-menu').classList.remove('active');
+                });
+            }
+            
+            if (closeAuraDemoBtn) {
+                closeAuraDemoBtn.addEventListener('click', () => {
+                    auraDemoModal.style.display = 'none';
+                });
+            }
+            
+            auraDemoModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    auraDemoModal.style.display = 'none';
+                }
+            });
+            
+            // Override the gallery button to use enhanced version
+            const galleryBtn = document.getElementById('gallery-btn');
+            const mobileGalleryBtn = document.getElementById('mobile-gallery-btn');
+            
+            if (galleryBtn) {
+                galleryBtn.removeEventListener('click', window.showPetsGallery);
+                galleryBtn.addEventListener('click', showEnhancedPetsGallery);
+            }
+            
+            if (mobileGalleryBtn) {
+                mobileGalleryBtn.removeEventListener('click', window.showPetsGallery);
+                mobileGalleryBtn.addEventListener('click', () => {
+                    showEnhancedPetsGallery();
+                    document.getElementById('mobile-menu').classList.remove('active');
+                });
+            }
+            
+            // Update counts on initial load
+            setTimeout(updateShopCounts, 100);
+        });
+        
+        // Function to check Lucky Cat display (for redeem code pets)
+        function checkLuckyCatDisplay() {
+            // This function checks if redeemed pets should be shown
+            const luckyCatPet = shopItems.pets.find(pet => pet.id === 'lucky_cat');
+            const meowlPet = shopItems.pets.find(pet => pet.id === 'meowl');
+            
+            if (luckyCatPet && gameState.redeemedCodes.includes('EDMARKISADMIN')) {
+                if (!gameState.purchasedItems.includes('lucky_cat')) {
+                    showNotification('Lucky Cat pet available! Check Pets tab to claim.', 'info');
+                }
+            }
+            
+            if (meowlPet && gameState.redeemedCodes.includes('ILOVEMEOWL')) {
+                if (!gameState.purchasedItems.includes('meowl')) {
+                    showNotification('GOD TIER Meowl pet available! Check Pets tab to claim.', 'info');
+                }
+            }
+        }
+        
+        // Function to apply divine avatar aura to options
+        function applyDivineAvatarAuraToOptions() {
+            const avatar = shopItems.avatars.find(a => a.id === gameState.equippedAvatar);
+            
+            if (!avatar || !avatar.attributes || !avatar.attributes.aura) return;
+            
+            const options = document.querySelectorAll('.option:not(.revealed):not(.eliminated):not(.gold):not(.empty)');
+            
+            options.forEach(option => {
+                switch(avatar.attributes.auraType) {
+                    case 'flame':
+                        option.style.boxShadow = '0 0 10px #00ffcc, 0 0 20px #00ffcc80';
+                        option.style.animation = 'optionFlame 2s infinite alternate';
+                        break;
+                    case 'cosmic':
+                        option.style.boxShadow = '0 0 15px #8a2be2, 0 0 30px #8a2be280';
+                        option.style.animation = 'cosmicPulse 2s infinite';
+                        break;
+                    case 'rainbow':
+                        option.style.animation = 'rainbowGlow 4s infinite';
+                        break;
+                    default:
+                        option.style.boxShadow = `0 0 10px ${avatar.attributes.auraColor || '#00ffcc'}`;
+                        break;
+                }
+            });
+        }
+        
+        // Override generateOptions to apply aura effects
+        const originalGenerateOptions = window.generateOptions;
+        window.generateOptions = function() {
+            originalGenerateOptions();
+            setTimeout(applyDivineAvatarAuraToOptions, 100);
+        };
+        
+        // Initial call to check for redeemed pets
+        setTimeout(checkLuckyCatDisplay, 2000);
+    </script>
 </body>
 </html>
