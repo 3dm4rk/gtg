@@ -165,7 +165,6 @@ const soundEffects = {
 function playSound(soundName) {
     if (!soundEnabled) return;
     
-    // First try to play the Web Audio API version
     if (soundEffects[soundName]) {
         soundEffects[soundName]();
     }
@@ -174,6 +173,8 @@ function playSound(soundName) {
 // Function to toggle sound
 function toggleSound() {
     soundEnabled = !soundEnabled;
+    updateSoundButton();
+    saveGameState();
     return soundEnabled;
 }
 
@@ -229,6 +230,18 @@ const gameState = {
     equippedFrame: 'default',
     equippedPet: 'none',
     
+    // Avatar Bonuses
+    avatarBonuses: {
+        default: { blessing: 0, aura: false },
+        knight: { blessing: 0.05, aura: false },
+        wizard: { blessing: 0.10, aura: false },
+        robot: { blessing: 0.15, aura: false },
+        celestial_king: { blessing: 0.50, aura: false, streakBonus: 3 },
+        divine_avatar: { blessing: 0.65, aura: true, streakBonus: 1 },
+        eternal_guardian: { blessing: 0.75, aura: true, streakBonus: 2 },
+        cosmic_emperor: { blessing: 1.00, aura: true, streakBonus: 5 }
+    },
+    
     // Themes
     purchasedThemes: [],
     activeTheme: 'default',
@@ -237,7 +250,6 @@ const gameState = {
         sea: 1.10,
         sky: 1.15,
         space: 1.20,
-        luckycat: 1.25,
         cosmic: 1.30
     },
     
@@ -366,7 +378,26 @@ const gameState = {
     diamondCheckInterval: null,
     
     // Cosmic pet tracking
-    cosmicDrawUsed: false
+    cosmicDrawUsed: false,
+    
+    // Avatar streak tracking
+    avatarStreakCounter: 0,
+    
+    // Aura effects
+    auraActive: false,
+    
+    // ROCK PAPER SCISSORS BOSS BATTLE
+    rockPaperScissorsUnlocked: false,
+    rockPaperScissorsExtensionPrice: 1000000,
+    bossBattleActive: false,
+    currentBoss: null,
+    playerRPSChoice: null,
+    bossRPSChoice: null,
+    rpsTimer: 5,
+    rpsTimerInterval: null,
+    rpsLives: 3,
+    rpsGameActive: false,
+    bossConsecutiveWins: 0
 };
 
 // Update the global soundEnabled flag when game state changes
@@ -376,16 +407,136 @@ Object.defineProperty(gameState, 'soundEnabled', {
     },
     set(value) {
         soundEnabled = value;
+        updateSoundButton();
     }
 });
 
 // ====== SHOP ITEMS DATABASE ======
 const shopItems = {
     avatars: [
-        { id: 'default', name: 'Basic', price: 0, icon: 'fas fa-user', color: '#fff', rarity: 'common' },
-        { id: 'knight', name: 'Golden Knight', price: 100, icon: 'fas fa-chess-knight', color: '#FFD700', rarity: 'rare' },
-        { id: 'wizard', name: 'Mystic Wizard', price: 250, icon: 'fas fa-hat-wizard', color: '#9c88ff', rarity: 'epic' },
-        { id: 'robot', name: 'Gold Bot', price: 500, icon: 'fas fa-robot', color: '#4dabf7', rarity: 'legendary' }
+        { 
+            id: 'default', 
+            name: 'Basic', 
+            price: 0, 
+            icon: 'fas fa-user', 
+            color: '#fff', 
+            rarity: 'common',
+            effect: 'No special effects',
+            attributes: {
+                blessing: 0,
+                aura: false,
+                description: 'Basic avatar with no bonuses'
+            }
+        },
+        { 
+            id: 'knight', 
+            name: 'Golden Knight', 
+            price: 100, 
+            icon: 'fas fa-chess-knight', 
+            color: '#FFD700', 
+            rarity: 'rare',
+            effect: '+5% Gold blessing every streak',
+            attributes: {
+                blessing: 0.05,
+                aura: false,
+                description: '5% gold bonus on correct guesses'
+            }
+        },
+        { 
+            id: 'wizard', 
+            name: 'Mystic Wizard', 
+            price: 250, 
+            icon: 'fas fa-hat-wizard', 
+            color: '#9c88ff', 
+            rarity: 'epic',
+            effect: '+10% Gold blessing every streak',
+            attributes: {
+                blessing: 0.10,
+                aura: false,
+                description: '10% gold bonus on correct guesses'
+            }
+        },
+        { 
+            id: 'robot', 
+            name: 'Gold Bot', 
+            price: 500, 
+            icon: 'fas fa-robot', 
+            color: '#4dabf7', 
+            rarity: 'legendary',
+            effect: '+15% Gold blessing every streak',
+            attributes: {
+                blessing: 0.15,
+                aura: false,
+                description: '15% gold bonus on correct guesses'
+            }
+        },
+        // NEW: Divine Rarity Avatars
+        { 
+            id: 'celestial_king', 
+            name: 'Celestial King', 
+            price: 100000, 
+            icon: 'fas fa-crown', 
+            color: '#FFD700', 
+            rarity: 'divine',
+            effect: '50% Gold blessing every 3 streaks + Divine Aura',
+            attributes: {
+                blessing: 0.50,
+                aura: false,
+                streakBonus: 3,
+                description: '50% gold bonus every 3 streaks'
+            }
+        },
+        { 
+            id: 'divine_avatar', 
+            name: 'Divine Avatar', 
+            price: 15, 
+            icon: 'fas fa-user-circle', 
+            color: '#00ffcc', 
+            rarity: 'divine',
+            effect: '65% Ungodly blessings + Blue Flame Aura',
+            attributes: {
+                blessing: 0.65,
+                aura: true,
+                auraColor: '#00ffcc',
+                auraType: 'flame',
+                description: '65% gold bonus + Blue flame aura on options'
+            },
+            priceInDiamonds: true
+        },
+        { 
+            id: 'eternal_guardian', 
+            name: 'Eternal Guardian', 
+            price: 500000, 
+            icon: 'fas fa-shield-alt', 
+            color: '#8a2be2', 
+            rarity: 'cosmic',
+            effect: '75% Blessings + Cosmic Aura + Streak Shield',
+            attributes: {
+                blessing: 0.75,
+                aura: true,
+                auraColor: '#8a2be2',
+                auraType: 'cosmic',
+                streakBonus: 2,
+                description: '75% gold bonus + Cosmic aura + Every 2 streaks bonus'
+            }
+        },
+        { 
+            id: 'cosmic_emperor', 
+            name: 'Cosmic Emperor', 
+            price: 1000000, 
+            icon: 'fas fa-gem', 
+            color: '#ff00ff', 
+            rarity: 'cosmic',
+            effect: '100% Ultimate blessings + Rainbow Aura + 5x Streak Multiplier',
+            attributes: {
+                blessing: 1.00,
+                aura: true,
+                auraColor: 'rainbow',
+                auraType: 'rainbow',
+                streakBonus: 5,
+                description: 'DOUBLE gold on correct guesses + Rainbow aura + 5x streak bonus'
+            }
+        }
     ],
     
     frames: [
@@ -678,6 +829,21 @@ const shopItems = {
             bonusCondition: 0,
             isCosmic: true,
             priceInDiamonds: false
+        },
+        // RPS Boss Pet (if earned)
+        { 
+            id: 'cosmic_god_pet', 
+            name: 'Cosmic God', 
+            price: 0, 
+            icon: 'fas fa-crown', 
+            color: '#8a2be2', 
+            effect: 'Ultimate cosmic powers + 99% win chance in RPS', 
+            rarity: 'cosmic',
+            bonusType: 'godly',
+            bonusAmount: 99,
+            bonusCondition: 0,
+            isCosmic: true,
+            isRedeemOnly: true
         }
     ],
     
@@ -771,6 +937,148 @@ const mysteryBoxRewards = {
     ]
 };
 
+// ====== BOSS DEFINITIONS ======
+const bossTypes = [
+    {
+        id: 'cosmic_god',
+        name: 'Cosmic God',
+        chance: 0.10, // 10%
+        rarity: 'cosmic',
+        ability: 'Steal all diamonds and gold, reset stats if lost',
+        abilityEffect: function() {
+            if (gameState.currentBoss && gameState.currentBoss.id === 'cosmic_god' && !gameState.rpsGameActive) {
+                // Boss steals everything if player loses
+                const stolenGold = gameState.gold;
+                const stolenDiamonds = gameState.diamonds;
+                gameState.gold = 0;
+                gameState.diamonds = 0;
+                return { 
+                    message: `Cosmic God stole ${stolenGold} gold and ${stolenDiamonds.toFixed(2)} diamonds!`,
+                    resetStats: true 
+                };
+            }
+            return { message: null, resetStats: false };
+        },
+        reward: {
+            type: 'pet',
+            petId: 'cosmic_god_pet',
+            name: 'Cosmic God Pet',
+            description: 'Cosmic God as your pet - ultimate power!'
+        },
+        winChance: 0.99 // 99% chance boss wins
+    },
+    {
+        id: 'space_robot',
+        name: 'Space Robot',
+        chance: 0.50, // 50%
+        rarity: 'rare',
+        ability: 'Divide your diamonds and gold by 5',
+        abilityEffect: function() {
+            gameState.gold = Math.floor(gameState.gold / 5);
+            gameState.diamonds = Math.floor(gameState.diamonds / 5);
+            return { 
+                message: `Space Robot divided your resources by 5!`,
+                resetStats: false 
+            };
+        },
+        reward: {
+            type: 'diamonds',
+            amount: 5,
+            name: '5 Diamonds'
+        }
+    },
+    {
+        id: 'space_ghost',
+        name: 'Space Ghost',
+        chance: 0.50, // 50%
+        rarity: 'rare',
+        ability: '50% chance for critical hit (instant lose 1 life)',
+        abilityEffect: function() {
+            if (Math.random() < 0.5) {
+                gameState.rpsLives--;
+                return { 
+                    message: `Space Ghost critical hit! Lost 1 life!`,
+                    resetStats: false 
+                };
+            }
+            return { message: null, resetStats: false };
+        },
+        reward: {
+            type: 'gold',
+            amount: 150000,
+            name: '150,000 Gold'
+        }
+    },
+    {
+        id: 'underworld_entity',
+        name: 'Underworld Entity',
+        chance: 0.50, // 50%
+        rarity: 'rare',
+        ability: '50% chance to silence (cannot choose RPS, auto lose)',
+        abilityEffect: function() {
+            if (Math.random() < 0.5) {
+                gameState.rpsLives--;
+                return { 
+                    message: `Underworld Entity silenced you! Auto lose 1 life!`,
+                    resetStats: false,
+                    silenced: true 
+                };
+            }
+            return { message: null, resetStats: false, silenced: false };
+        },
+        reward: {
+            type: 'random',
+            items: [
+                { type: 'gold', amount: 50000, chance: 0.5 },
+                { type: 'diamonds', amount: 2, chance: 0.3 },
+                { type: 'life', amount: 1, chance: 0.2 }
+            ],
+            name: 'Random Reward'
+        }
+    },
+    {
+        id: 'skeleton_nigga',
+        name: 'Skeleton Warrior',
+        chance: 0.50, // 50%
+        rarity: 'common',
+        ability: 'If boss wins 2 in a row, instant game over',
+        abilityEffect: function(winsInRow) {
+            if (winsInRow >= 2) {
+                gameState.rpsLives = 0;
+                return { 
+                    message: `Skeleton Warrior combo! Instant defeat!`,
+                    resetStats: false 
+                };
+            }
+            return { message: null, resetStats: false };
+        },
+        reward: {
+            type: 'gold',
+            amount: () => Math.floor(Math.random() * 101) + 500, // 500-600 gold
+            name: 'Random Gold'
+        }
+    },
+    {
+        id: 'otensahorse',
+        name: 'Oten Sahorse',
+        chance: 0.50, // 50%
+        rarity: 'rare',
+        ability: 'If boss wins once, reduce lives to 1',
+        abilityEffect: function() {
+            gameState.rpsLives = 1;
+            return { 
+                message: `Oten Sahorse weakened you! Only 1 life left!`,
+                resetStats: false 
+            };
+        },
+        reward: {
+            type: 'diamonds',
+            amount: 1,
+            name: '1 Diamond'
+        }
+    }
+];
+
 // ====== INITIALIZATION ======
 document.addEventListener('DOMContentLoaded', function() {
     // Load saved game state
@@ -805,20 +1113,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update max levels display
     updateMaxLevels();
+    
+    // Setup mobile menu
+    setupMobileMenu();
+    
+    // Initialize all systems
+    initializeAllSystems();
+    
+    // Check for daily reward
+    setTimeout(() => {
+        checkDailyReward();
+    }, 1000);
+    
+    // Initialize RPS system
+    initializeRPSSystem();
 });
 
 function initializeAudio() {
-    // Create audio context on first user interaction
     const initAudio = () => {
         try {
-            // Resume audio context
             if (audioContext.state === 'suspended') {
                 audioContext.resume();
             }
             
-            console.log("Audio context initialized");
-            
-            // Remove event listeners
             document.removeEventListener('click', initAudio);
             document.removeEventListener('keydown', initAudio);
             document.removeEventListener('touchstart', initAudio);
@@ -827,7 +1144,6 @@ function initializeAudio() {
         }
     };
     
-    // Add event listeners for user interaction
     document.addEventListener('click', initAudio);
     document.addEventListener('keydown', initAudio);
     document.addEventListener('touchstart', initAudio);
@@ -900,6 +1216,10 @@ function loadGameState() {
     const savedMegaExtension = localStorage.getItem('gtgMegaLevelExtension');
     if (savedMegaExtension) gameState.megaLevelExtension = savedMegaExtension === 'true';
     
+    // RPS State
+    const savedRPSUnlocked = localStorage.getItem('gtgRPSUnlocked');
+    if (savedRPSUnlocked) gameState.rockPaperScissorsUnlocked = savedRPSUnlocked === 'true';
+    
     // Calculate total pets
     gameState.totalPets = gameState.purchasedItems.filter(item => 
         shopItems.pets.some(pet => pet.id === item && pet.id !== 'none')
@@ -909,7 +1229,6 @@ function loadGameState() {
     const savedPetAbilities = localStorage.getItem('gtgPetAbilities');
     if (savedPetAbilities) {
         const loadedAbilities = JSON.parse(savedPetAbilities);
-        // Merge with existing structure
         Object.keys(loadedAbilities).forEach(petId => {
             if (gameState.petAbilities[petId]) {
                 gameState.petAbilities[petId] = {...gameState.petAbilities[petId], ...loadedAbilities[petId]};
@@ -950,37 +1269,32 @@ function saveGameState() {
     localStorage.setItem('gtgPetAbilities', JSON.stringify(gameState.petAbilities));
     localStorage.setItem('gtgCosmicDrawUsed', gameState.cosmicDrawUsed);
     localStorage.setItem('gtgMegaLevelExtension', gameState.megaLevelExtension);
+    localStorage.setItem('gtgRPSUnlocked', gameState.rockPaperScissorsUnlocked);
 }
 
 // ====== TIMER SYSTEM ======
 function startGameTimer() {
-    // Clear existing timer
     if (gameState.timerInterval) {
         clearInterval(gameState.timerInterval);
     }
     
-    // Reset timer to 10 minutes
-    gameState.gameTimer = 600; // 600 seconds = 10 minutes
+    gameState.gameTimer = 600;
     gameState.timerActive = true;
     
-    // Show timer display
-    document.getElementById('timer-display').style.display = 'block';
+    document.getElementById('timer-display').style.display = 'flex';
     updateTimerDisplay();
     
-    // Start countdown
     gameState.timerInterval = setInterval(() => {
         if (gameState.gameActive && gameState.timerActive) {
             gameState.gameTimer--;
             updateTimerDisplay();
             
-            // Check if timer reached 0
             if (gameState.gameTimer <= 0) {
                 clearInterval(gameState.timerInterval);
                 gameState.timerActive = false;
                 showTimerModal();
             }
             
-            // Flash timer when under 1 minute
             if (gameState.gameTimer <= 60) {
                 document.getElementById('timer-display').style.animation = 'timerPulse 0.5s infinite alternate';
             }
@@ -1004,32 +1318,23 @@ function updateTimerDisplay() {
 }
 
 function showTimerModal() {
-    // Stop the game
     gameState.gameActive = false;
     gameState.isSelecting = false;
     
-    // Stop all effects
     stopBackgroundMusic();
     stopLuckyCatInterval();
     
-    // Show timer modal
     document.getElementById('timer-modal').style.display = 'flex';
-    
-    // Play game over sound
     playSound('gameover');
-    
-    // Save game state
     saveGameState();
 }
 
 // ====== DIAMONDS CURRENCY SYSTEM ======
 function startDiamondGenerationCheck() {
-    // Clear existing interval
     if (gameState.diamondCheckInterval) {
         clearInterval(gameState.diamondCheckInterval);
     }
     
-    // Check for diamond generation every 5 seconds
     gameState.diamondCheckInterval = setInterval(() => {
         generateDiamondsFromGold();
         applyPetPassiveEffects();
@@ -1040,35 +1345,20 @@ function generateDiamondsFromGold() {
     const goldIncrease = gameState.gold - gameState.lastDiamondCheckGold;
     
     if (goldIncrease > 0) {
-        // Calculate diamonds based on gold: 0.5 diamonds per 100,000 gold
         const diamondsToAdd = (goldIncrease / 100000) * 0.5;
         
-        if (diamondsToAdd >= 0.01) { // Minimum 0.01 diamonds to add
+        if (diamondsToAdd >= 0.01) {
             gameState.diamonds += diamondsToAdd;
             gameState.lastDiamondCheckGold = gameState.gold;
             
-            // Update display
             updateDisplays();
             
-            // Show diamond effect for significant gains
             if (diamondsToAdd >= 0.1) {
                 showDiamondEffect(diamondsToAdd);
             }
             
             saveGameState();
         }
-    }
-    
-    // Also check total gold for diamonds
-    const totalDiamondsFromGold = Math.floor(gameState.gold / 200000); // 1 diamond per 200,000 gold
-    const bonusDiamonds = totalDiamondsFromGold * 0.1; // 10% bonus
-    
-    if (bonusDiamonds > 0 && !gameState.diamondBonusGiven) {
-        gameState.diamonds += bonusDiamonds;
-        gameState.diamondBonusGiven = true;
-        showNotification(`Gold milestone reached! +${bonusDiamonds.toFixed(2)} diamonds bonus!`, 'success');
-        updateDisplays();
-        saveGameState();
     }
 }
 
@@ -1081,7 +1371,6 @@ function showDiamondEffect(amount) {
     
     document.body.appendChild(effect);
     
-    // Play diamond sound
     playSound('diamond');
     
     setTimeout(() => {
@@ -1122,6 +1411,70 @@ function setupWelcomeSystem() {
     });
 }
 
+// ====== MOBILE MENU ======
+function setupMobileMenu() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileMenuClose = document.getElementById('mobile-menu-close');
+    
+    if (!mobileMenuBtn || !mobileMenu) return;
+    
+    mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.add('active');
+        playSound('click');
+    });
+    
+    mobileMenuClose.addEventListener('click', () => {
+        mobileMenu.classList.remove('active');
+    });
+    
+    // Setup mobile menu buttons
+    document.getElementById('mobile-shop-btn').addEventListener('click', () => {
+        document.getElementById('shop-btn').click();
+        mobileMenu.classList.remove('active');
+    });
+    
+    document.getElementById('mobile-stats-btn').addEventListener('click', () => {
+        document.getElementById('stats-btn').click();
+        mobileMenu.classList.remove('active');
+    });
+    
+    document.getElementById('mobile-gallery-btn').addEventListener('click', () => {
+        document.getElementById('gallery-btn').click();
+        mobileMenu.classList.remove('active');
+    });
+    
+    document.getElementById('mobile-redeem-btn').addEventListener('click', () => {
+        document.getElementById('redeem-btn').click();
+        mobileMenu.classList.remove('active');
+    });
+    
+    document.getElementById('mobile-save-btn').addEventListener('click', () => {
+        saveGameState();
+        showNotification('Game saved successfully!', 'success');
+        mobileMenu.classList.remove('active');
+    });
+    
+    document.getElementById('mobile-help-btn').addEventListener('click', () => {
+        document.getElementById('help-modal').style.display = 'flex';
+        mobileMenu.classList.remove('active');
+    });
+    
+    // Close help modal
+    document.getElementById('close-help-btn').addEventListener('click', () => {
+        document.getElementById('help-modal').style.display = 'none';
+    });
+    
+    // RPS mobile button
+    const mobileRpsBtn = document.getElementById('mobile-rps-btn');
+    if (mobileRpsBtn) {
+        mobileRpsBtn.addEventListener('click', () => {
+            startBossBattleChallenge();
+            mobileMenu.classList.remove('active');
+        });
+    }
+}
+
 // ====== REDEEM CODE SYSTEM ======
 function setupRedeemSystem() {
     const redeemBtn = document.getElementById('redeem-btn');
@@ -1137,14 +1490,12 @@ function setupRedeemSystem() {
     
     if (!redeemBtn) return;
     
-    // Open redeem modal
     redeemBtn.addEventListener('click', function() {
         playSound('click');
         redeemModal.style.display = 'flex';
         redeemInput.focus();
     });
     
-    // Submit redeem code
     submitRedeemBtn.addEventListener('click', function() {
         const code = redeemInput.value.trim().toUpperCase();
         if (code) {
@@ -1154,43 +1505,37 @@ function setupRedeemSystem() {
         }
     });
     
-    // Submit on Enter key
     redeemInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             submitRedeemBtn.click();
         }
     });
     
-    // Close modal
     closeRedeemBtn.addEventListener('click', function() {
         redeemModal.style.display = 'none';
         redeemInput.value = '';
     });
     
-    // Close god tier modal
     if (closeGodTierBtn) {
         closeGodTierBtn.addEventListener('click', function() {
             godTierModal.style.display = 'none';
-            loadShopItems(); // Refresh shop to show new pet
+            loadShopItems();
         });
     }
     
-    // Close cosmic draw modal
     if (closeCosmicDrawBtn) {
         closeCosmicDrawBtn.addEventListener('click', function() {
             cosmicDrawModal.style.display = 'none';
-            loadShopItems(); // Refresh shop
+            loadShopItems();
         });
     }
     
-    // Draw cosmic pet
     if (drawCosmicPetBtn) {
         drawCosmicPetBtn.addEventListener('click', function() {
             drawCosmicPet();
         });
     }
     
-    // Close on background click
     redeemModal.addEventListener('click', function(e) {
         if (e.target === this) {
             redeemModal.style.display = 'none';
@@ -1202,7 +1547,7 @@ function setupRedeemSystem() {
         godTierModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 godTierModal.style.display = 'none';
-                loadShopItems(); // Refresh shop
+                loadShopItems();
             }
         });
     }
@@ -1211,20 +1556,18 @@ function setupRedeemSystem() {
         cosmicDrawModal.addEventListener('click', function(e) {
             if (e.target === this) {
                 cosmicDrawModal.style.display = 'none';
-                loadShopItems(); // Refresh shop
+                loadShopItems();
             }
         });
     }
 }
 
 function processRedeemCode(code) {
-    // Check if code has already been redeemed
     if (gameState.redeemedCodes.includes(code)) {
         showNotification('This code has already been redeemed!', 'error');
         return;
     }
     
-    // Check if code exists
     const redeemInfo = gameState.redeemCodes[code];
     if (!redeemInfo) {
         showNotification('Invalid redeem code!', 'error');
@@ -1235,11 +1578,9 @@ function processRedeemCode(code) {
         return;
     }
     
-    // Process valid code
     playSound('redeem');
     gameState.redeemedCodes.push(code);
     
-    // Process rewards
     switch(redeemInfo.reward) {
         case 'lucky_cat_pet':
             if (!gameState.purchasedItems.includes('lucky_cat')) {
@@ -1253,12 +1594,8 @@ function processRedeemCode(code) {
             
         case 'meowl_pet':
             if (!gameState.purchasedItems.includes('meowl')) {
-                // Show god tier unlock modal
                 document.getElementById('god-tier-modal').style.display = 'flex';
                 showNotification('GOD TIER PET UNLOCKED! Check Pets tab!', 'success');
-                
-                // Add to redeemed codes but not purchased yet (player needs to claim)
-                // The pet will be available in shop for claiming
             } else {
                 showNotification('You already have the Meowl pet!', 'info');
             }
@@ -1266,7 +1603,6 @@ function processRedeemCode(code) {
             
         case 'cosmic_draw':
             if (!gameState.cosmicDrawUsed) {
-                // Show cosmic draw modal
                 document.getElementById('cosmic-draw-modal').style.display = 'flex';
                 showNotification('Cosmic pet draw unlocked!', 'success');
                 createCosmicWheel();
@@ -1276,17 +1612,10 @@ function processRedeemCode(code) {
             break;
     }
     
-    // Close modal and update shop
     document.getElementById('redeem-modal').style.display = 'none';
     document.getElementById('redeem-code-input').value = '';
-    
-    // Update shop to show unlocked pets
     loadShopItems();
-    
-    // Save game state
     saveGameState();
-    
-    // Show special notification
     showGoldEffect(0, `${redeemInfo.name} Unlocked!`);
 }
 
@@ -1294,7 +1623,6 @@ function createCosmicWheel() {
     const wheel = document.getElementById('cosmic-wheel');
     wheel.innerHTML = '';
     
-    // Create wheel sections for each cosmic pet
     const petCount = cosmicPets.length;
     const angle = 360 / petCount;
     
@@ -1313,7 +1641,6 @@ function createCosmicWheel() {
         wheel.appendChild(section);
     });
     
-    // Add center
     const center = document.createElement('div');
     center.className = 'cosmic-wheel-center';
     center.innerHTML = '<i class="fas fa-dice"></i>';
@@ -1326,15 +1653,12 @@ function drawCosmicPet() {
         return;
     }
     
-    // Play draw sound
     playSound('draw');
     
-    // Determine which pet is won based on chances
     let random = Math.random();
     let selectedPet = null;
     let cumulativeChance = 0;
     
-    // Calculate cumulative chances
     for (const petId of cosmicPets) {
         const pet = shopItems.pets.find(p => p.id === petId);
         if (pet && pet.drawChance) {
@@ -1346,119 +1670,90 @@ function drawCosmicPet() {
         }
     }
     
-    // Fallback to random pet if no selection
     if (!selectedPet) {
         const randomIndex = Math.floor(Math.random() * cosmicPets.length);
         selectedPet = shopItems.pets.find(p => p.id === cosmicPets[randomIndex]);
     }
     
-    // Mark draw as used
     gameState.cosmicDrawUsed = true;
     
-    // Show cosmic effect
     const effect = document.createElement('div');
     effect.className = 'cosmic-draw-effect';
     effect.innerHTML = `<i class="${selectedPet.icon}"></i>`;
     effect.style.color = selectedPet.color;
     document.body.appendChild(effect);
     
-    setTimeout(() => {
-        effect.remove();
-    }, 2000);
+    setTimeout(() => effect.remove(), 2000);
     
-    // Show result
     document.getElementById('cosmic-result').style.display = 'block';
     document.getElementById('cosmic-pet-name').textContent = selectedPet.name;
     document.getElementById('cosmic-pet-description').textContent = selectedPet.effect;
     
-    // Add pet to inventory
     if (!gameState.purchasedItems.includes(selectedPet.id)) {
         gameState.purchasedItems.push(selectedPet.id);
         gameState.totalPets++;
         
-        // Auto-equip the pet
         setTimeout(() => {
             equipItem(selectedPet.id, 'pets');
             showNotification(`You won the ${selectedPet.name}! Equipped automatically!`, 'success');
         }, 1000);
     } else {
-        // If already owned, give bonus diamonds
         gameState.diamonds += 10;
         showNotification(`You already have ${selectedPet.name}! +10 diamonds instead!`, 'info');
     }
     
-    // Update displays
     updateDisplays();
     loadShopItems();
-    
-    // Save game state
     saveGameState();
-    
-    // Play cosmic sound
     playSound('cosmic');
-}
-
-function checkLuckyCatDisplay() {
-    // Show Lucky Cat in shop if redeemed but not purchased yet
-    // (For display purposes in the shop)
 }
 
 // ====== LUCKY CAT PET SYSTEM ======
 function startLuckyCatPassiveGold() {
-    // Clear any existing interval
     if (gameState.luckyCatInterval) {
         clearInterval(gameState.luckyCatInterval);
     }
     
-    // Start passive gold generation
     gameState.luckyCatInterval = setInterval(() => {
         if (gameState.gameActive && gameState.equippedPet === 'lucky_cat') {
             const goldAmount = 200;
             gameState.gold += goldAmount;
             gameState.totalGoldEarned += goldAmount;
             
-            // Update displays
             updateDisplays();
-            
-            // Show gold effect
             showGoldEffect(goldAmount, "Lucky Cat Gold!");
-            
-            // Play cat sound
             playSound('cat');
-            
-            // Show notification
             showNotification(`Lucky Cat: +${goldAmount} Gold!`, 'success');
-            
-            // Save game state
             saveGameState();
         }
-    }, 5000); // Every 5 seconds
+    }, 5000);
 }
 
 function applyLuckyCatGameEffect() {
-    // Lucky Cat helps by reducing options to 2 when there are more than 2 options
     if (gameState.equippedPet === 'lucky_cat' && 
         gameState.gameActive && 
         gameState.optionsCount > 2 && 
         gameState.revealedOptions.length === 0) {
         
-        // Automatically eliminate wrong options to leave only 2 options
         const wrongOptions = Array.from({length: gameState.optionsCount}, (_, i) => i)
             .filter(i => i !== gameState.goldPosition);
         
-        // Keep one wrong option (for 50/50 chance) and eliminate the rest
         const wrongToKeep = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
         const wrongToEliminate = wrongOptions.filter(i => i !== wrongToKeep);
         
-        // Mark eliminated options as revealed
         gameState.revealedOptions.push(...wrongToEliminate);
         
-        // Update instruction to show Lucky Cat is helping
         const instruction = document.getElementById('instruction');
         instruction.innerHTML = `<span style="color:#ff6b9d"><i class="fas fa-cat"></i> Lucky Cat is helping! Options reduced to 2 (50/50 chance!)</span>`;
         
-        // Regenerate options to show eliminated ones
         generateOptions();
+    }
+}
+
+function stopLuckyCatInterval() {
+    if (gameState.luckyCatInterval) {
+        clearInterval(gameState.luckyCatInterval);
+        gameState.luckyCatInterval = null;
     }
 }
 
@@ -1466,10 +1761,8 @@ function applyLuckyCatGameEffect() {
 function applyPetPassiveEffects() {
     const currentTime = Date.now();
     
-    // Apply effects based on equipped pet
     switch(gameState.equippedPet) {
         case 'elder_god_butterfly':
-            // 1k gold every 5 seconds
             if (currentTime - (gameState.petAbilities.elder_god_butterfly.lastGoldTime || 0) >= 5000) {
                 gameState.gold += 1000;
                 gameState.totalGoldEarned += 1000;
@@ -1483,7 +1776,6 @@ function applyPetPassiveEffects() {
             break;
             
         case 'carlito_cocofanto':
-            // streak × diamond gold every 10 seconds
             if (currentTime - (gameState.petAbilities.carlito_cocofanto.lastGoldTime || 0) >= 10000) {
                 const goldAmount = Math.floor(gameState.streak * gameState.diamonds);
                 if (goldAmount > 0) {
@@ -1500,7 +1792,6 @@ function applyPetPassiveEffects() {
             break;
             
         case 'tungtung_sahur':
-            // 0.1 diamond every 30 seconds
             if (currentTime - (gameState.petAbilities.tungtung_sahur.lastDiamondTime || 0) >= 30000) {
                 gameState.diamonds += 0.1;
                 gameState.petAbilities.tungtung_sahur.lastDiamondTime = currentTime;
@@ -1513,7 +1804,6 @@ function applyPetPassiveEffects() {
             break;
             
         case 'jester_magician':
-            // Apply if 10 streak condition met
             if (gameState.streak >= 10) {
                 if (currentTime - (gameState.petAbilities.jester_magician.lastGoldTime || 0) >= 15000) {
                     const goldAmount = Math.floor(gameState.lives * gameState.diamonds);
@@ -1532,7 +1822,6 @@ function applyPetPassiveEffects() {
             break;
             
         case '3dm4rk':
-            // Random 1-100 diamonds every minute
             if (currentTime - (gameState.petAbilities['3dm4rk'].lastDiamondTime || 0) >= 60000) {
                 const diamondAmount = Math.floor(Math.random() * 100) + 1;
                 gameState.diamonds += diamondAmount;
@@ -1546,14 +1835,12 @@ function applyPetPassiveEffects() {
             break;
             
         case 'entity':
-            // 9999 score every 30s
             if (currentTime - (gameState.petAbilities.entity.lastScoreTime || 0) >= 30000) {
                 gameState.score += 9999;
                 gameState.petAbilities.entity.lastScoreTime = currentTime;
                 showNotification('Entity: +9999 Score!', 'success');
             }
             
-            // 9999 diamond every 5m
             if (currentTime - (gameState.petAbilities.entity.lastDiamondTime || 0) >= 300000) {
                 gameState.diamonds += 9999;
                 gameState.petAbilities.entity.lastDiamondTime = currentTime;
@@ -1561,7 +1848,6 @@ function applyPetPassiveEffects() {
                 showNotification('Entity: +9999 Diamonds!', 'success');
             }
             
-            // 9999 gold every 2m
             if (currentTime - (gameState.petAbilities.entity.lastGoldTime || 0) >= 120000) {
                 gameState.gold += 9999;
                 gameState.totalGoldEarned += 9999;
@@ -1570,7 +1856,6 @@ function applyPetPassiveEffects() {
                 showNotification('Entity: +9999 Gold!', 'success');
             }
             
-            // 9999 streak every 5m
             if (currentTime - (gameState.petAbilities.entity.lastStreakTime || 0) >= 300000) {
                 gameState.streak += 9999;
                 gameState.petAbilities.entity.lastStreakTime = currentTime;
@@ -1582,7 +1867,6 @@ function applyPetPassiveEffects() {
             break;
             
         case 'cosming_dragon':
-            // Convert 200k gold to 0.5 diamond
             if (gameState.gold >= 200000 && 
                 currentTime - (gameState.petAbilities.cosming_dragon.lastConversion || 0) >= 30000) {
                 gameState.gold -= 200000;
@@ -1594,7 +1878,6 @@ function applyPetPassiveEffects() {
                 showNotification('Cosming Dragon: Converted 200k gold to 0.5 diamonds!', 'success');
             }
             
-            // 0.5 diamond every 30 seconds
             if (currentTime - (gameState.petAbilities.cosming_dragon.lastDiamondTime || 0) >= 30000) {
                 gameState.diamonds += 0.5;
                 gameState.petAbilities.cosming_dragon.lastDiamondTime = currentTime;
@@ -1603,7 +1886,6 @@ function applyPetPassiveEffects() {
                 showNotification('Cosming Dragon: +0.5 Diamonds!', 'success');
             }
             
-            // 100k gold every 30 seconds
             if (currentTime - (gameState.petAbilities.cosming_dragon.lastGoldTime || 0) >= 30000) {
                 gameState.gold += 100000;
                 gameState.totalGoldEarned += 100000;
@@ -1613,11 +1895,10 @@ function applyPetPassiveEffects() {
                 showNotification('Cosming Dragon: +100,000 Gold!', 'success');
             }
             
-            // 100 streak every 30 seconds
             if (currentTime - (gameState.petAbilities.cosming_dragon.lastStreakTime || 0) >= 30000) {
                 gameState.streak += 100;
                 gameState.petAbilities.cosming_dragon.lastStreakTime = currentTime;
-                showNotification('Cosming Dragon: +100 Streak!', 'success');
+                showNotification('Cosmic Dragon: +100 Streak!', 'success');
             }
             
             updateDisplays();
@@ -1633,26 +1914,24 @@ function updatePetEffectDisplays() {
     const turtleEffect = document.getElementById('turtle-effect-display');
     const cosmicEffect = document.getElementById('cosmic-effect-display');
     
-    // Reset all
     luckyCatEffect.style.display = 'none';
     meowlEffect.style.display = 'none';
     phoenixEffect.style.display = 'none';
     turtleEffect.style.display = 'none';
     cosmicEffect.style.display = 'none';
     
-    // Show based on equipped pet
     switch(gameState.equippedPet) {
         case 'lucky_cat':
-            luckyCatEffect.style.display = 'block';
+            luckyCatEffect.style.display = 'flex';
             break;
         case 'meowl':
-            meowlEffect.style.display = 'block';
+            meowlEffect.style.display = 'flex';
             break;
         case 'rainbow_phoenix':
-            phoenixEffect.style.display = 'block';
+            phoenixEffect.style.display = 'flex';
             break;
         case 'time_travel_turtle':
-            turtleEffect.style.display = 'block';
+            turtleEffect.style.display = 'flex';
             break;
         case 'cosming_dragon':
         case 'elder_god_butterfly':
@@ -1664,7 +1943,8 @@ function updatePetEffectDisplays() {
         case 'croco_boy':
         case '3dm4rk':
         case 'entity':
-            cosmicEffect.style.display = 'block';
+        case 'cosmic_god_pet':
+            cosmicEffect.style.display = 'flex';
             const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
             if (pet) {
                 cosmicEffect.innerHTML = `<i class="${pet.icon}"></i>`;
@@ -1678,10 +1958,8 @@ function createPetThemeEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     effectsContainer.innerHTML = '';
     
-    // Remove all theme classes first
     document.body.classList.remove('theme-meowl', 'theme-phoenix', 'theme-turtle', 'theme-cosmic');
     
-    // Add theme based on equipped pet
     switch(gameState.equippedPet) {
         case 'meowl':
             document.body.classList.add('theme-meowl');
@@ -1705,6 +1983,7 @@ function createPetThemeEffects() {
         case 'croco_boy':
         case '3dm4rk':
         case 'entity':
+        case 'cosmic_god_pet':
             document.body.classList.add('theme-cosmic');
             createCosmicEffects();
             break;
@@ -1714,13 +1993,11 @@ function createPetThemeEffects() {
 function createMeowlEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     
-    // Create main effect
     const effect = document.createElement('div');
     effect.className = 'theme-effect meowl-effect';
     effectsContainer.appendChild(effect);
     
-    // Create green glow particles
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 15; i++) {
         const particle = document.createElement('div');
         particle.className = 'theme-particle';
         particle.style.width = `${Math.random() * 3 + 2}px`;
@@ -1738,13 +2015,11 @@ function createMeowlEffects() {
 function createRainbowPhoenixEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     
-    // Create main effect
     const effect = document.createElement('div');
     effect.className = 'theme-effect phoenix-effect';
     effectsContainer.appendChild(effect);
     
-    // Create rainbow particles
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 20; i++) {
         const particle = document.createElement('div');
         particle.className = 'rainbow-particle';
         particle.style.width = `${Math.random() * 4 + 2}px`;
@@ -1752,8 +2027,7 @@ function createRainbowPhoenixEffects() {
         particle.style.left = `${Math.random() * 100}%`;
         particle.style.top = `${Math.random() * 100 + 100}%`;
         
-        // Rainbow colors
-        const hue = Math.random() * 60; // Red to yellow spectrum
+        const hue = Math.random() * 60;
         particle.style.background = `hsl(${hue}, 100%, 50%)`;
         particle.style.boxShadow = `0 0 ${Math.random() * 10 + 5}px currentColor`;
         particle.style.animationDelay = `${Math.random() * 3}s`;
@@ -1765,13 +2039,11 @@ function createRainbowPhoenixEffects() {
 function createTimeTravelTurtleEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     
-    // Create main effect
     const effect = document.createElement('div');
     effect.className = 'theme-effect turtle-effect';
     effectsContainer.appendChild(effect);
     
-    // Create time travel particles
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 15; i++) {
         const particle = document.createElement('div');
         particle.className = 'time-particle';
         particle.innerHTML = '<i class="fas fa-clock"></i>';
@@ -1787,26 +2059,23 @@ function createTimeTravelTurtleEffects() {
 function createCosmicEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     
-    // Create main effect
     const effect = document.createElement('div');
     effect.className = 'theme-effect cosmic-effect-bg';
     effectsContainer.appendChild(effect);
     
-    // Create cosmic particles
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 25; i++) {
         const particle = document.createElement('div');
         particle.className = 'cosmic-particle';
         particle.style.left = `${Math.random() * 100}%`;
         particle.style.top = `${Math.random() * 100 + 100}%`;
-        particle.style.background = `hsl(${Math.random() * 60 + 270}, 100%, 70%)`; // Purple-blue spectrum
+        particle.style.background = `hsl(${Math.random() * 60 + 270}, 100%, 70%)`;
         particle.style.boxShadow = `0 0 ${Math.random() * 10 + 5}px currentColor`;
         particle.style.animationDelay = `${Math.random() * 5}s`;
         
         effectsContainer.appendChild(particle);
     }
     
-    // Start cosmic music if equipped
-    if (gameState.equippedPet === 'cosming_dragon' || gameState.equippedPet === '3dm4rk' || gameState.equippedPet === 'entity') {
+    if (gameState.equippedPet === 'cosming_dragon' || gameState.equippedPet === '3dm4rk' || gameState.equippedPet === 'entity' || gameState.equippedPet === 'cosmic_god_pet') {
         startCosmicMusic();
     }
 }
@@ -1830,18 +2099,15 @@ function stopCosmicMusic() {
 // ====== NEW PET ABILITIES ======
 function applyMeowlAbilities() {
     if (gameState.equippedPet === 'meowl') {
-        // Start Meowl's special music
         const meowlMusic = document.getElementById('meowl-music');
-        if (meowlMusic && gameState.gameActive) {
-            meowlMusic.volume = gameState.musicVolume * 0.5; // 50% volume
+        if (meowlMusic && gameState.gameActive && gameState.musicEnabled) {
+            meowlMusic.volume = gameState.musicVolume * 0.5;
             meowlMusic.play().catch(e => console.log("Meowl music play failed:", e));
         }
         
-        // Reset abilities for new game
         gameState.petAbilities.meowl.extraAttemptsUsed = 0;
         gameState.petAbilities.meowl.healthRestored = false;
         
-        // Show Meowl protection in instruction
         const instruction = document.getElementById('instruction');
         instruction.innerHTML += ` <span style="color:#00ff00"><i class="fas fa-paw"></i> Meowl Protection Active (${gameState.petAbilities.meowl.extraAttempts} extra attempts)</span>`;
     }
@@ -1852,28 +2118,20 @@ function checkMeowlHealthRestore() {
         gameState.lives === 1 && 
         !gameState.petAbilities.meowl.healthRestored) {
         
-        // Restore health to 3
         gameState.lives = 3;
         gameState.petAbilities.meowl.healthRestored = true;
         
-        // Update display
         updateLivesDisplay();
         updateDisplays();
         
-        // Show effect
         const effect = document.createElement('div');
         effect.className = 'meowl-prediction-effect';
         effect.innerHTML = '<i class="fas fa-heart"></i> Meowl Health Restore!';
         document.body.appendChild(effect);
         
         setTimeout(() => effect.remove(), 1000);
-        
-        // Show notification
         showNotification('Meowl restored your health to 3!', 'success');
-        
-        // Play Meowl sound
         playSound('meowl');
-        
         saveGameState();
     }
 }
@@ -1884,18 +2142,13 @@ function useMeowlExtraAttempt() {
         
         gameState.petAbilities.meowl.extraAttemptsUsed++;
         
-        // Show effect
         const effect = document.createElement('div');
         effect.className = 'meowl-prediction-effect';
         effect.innerHTML = `<i class="fas fa-paw"></i> Meowl Protection! (${gameState.petAbilities.meowl.extraAttempts - gameState.petAbilities.meowl.extraAttemptsUsed} left)`;
         document.body.appendChild(effect);
         
         setTimeout(() => effect.remove(), 1000);
-        
-        // Show notification
         showNotification(`Meowl protected you! ${gameState.petAbilities.meowl.extraAttempts - gameState.petAbilities.meowl.extraAttemptsUsed} extra attempts remaining.`, 'success');
-        
-        // Play Meowl sound
         playSound('meowl');
         
         return true;
@@ -1907,22 +2160,16 @@ function checkRainbowPhoenixResurrection() {
     if (gameState.equippedPet === 'rainbow_phoenix' && 
         !gameState.petAbilities.rainbow_phoenix.resurrectionUsed) {
         
-        // 50% chance for resurrection
         if (Math.random() < gameState.petAbilities.rainbow_phoenix.resurrectionChance) {
             gameState.petAbilities.rainbow_phoenix.resurrectionUsed = true;
             
-            // Show resurrection effect
             const effect = document.createElement('div');
             effect.className = 'phoenix-resurrect-effect';
             effect.innerHTML = '<i class="fas fa-fire"></i> Phoenix Resurrection!';
             document.body.appendChild(effect);
             
             setTimeout(() => effect.remove(), 1500);
-            
-            // Play phoenix sound
             playSound('phoenix');
-            
-            // Show notification
             showNotification('Rainbow Phoenix resurrected you!', 'success');
             
             return true;
@@ -1938,42 +2185,28 @@ function useTimeRewind() {
         gameState.selectedOption !== null &&
         gameState.selectedOption !== gameState.goldPosition) {
         
-        // Use the rewind ability
         gameState.petAbilities.time_travel_turtle.rewindAvailable = false;
         gameState.petAbilities.time_travel_turtle.rewindUsed = true;
         
-        // Remove the wrong selection from revealed options
         const wrongIndex = gameState.revealedOptions.indexOf(gameState.selectedOption);
         if (wrongIndex !== -1) {
             gameState.revealedOptions.splice(wrongIndex, 1);
         }
         
-        // Reset selection state
         gameState.selectedOption = null;
         gameState.isSelecting = false;
         
-        // Show time rewind effect
         const effect = document.createElement('div');
         effect.className = 'time-rewind-effect';
         document.body.appendChild(effect);
         
         setTimeout(() => effect.remove(), 1000);
-        
-        // Play time travel sound
         playSound('timeTravel');
-        
-        // Regenerate options (undoing the wrong selection)
         generateOptions();
         
-        // Update instruction
         document.getElementById('instruction').innerHTML = `<span style="color:#00ffcc">Time Travel Turtle rewound time! Try again!</span>`;
-        
-        // Hide time rewind button
         document.getElementById('time-rewind-btn').style.display = 'none';
-        
-        // Show notification
         showNotification('Time rewound! Try your guess again.', 'success');
-        
         saveGameState();
         
         return true;
@@ -1984,35 +2217,28 @@ function useTimeRewind() {
 // ====== COSMIC PET ABILITIES ======
 function applyCosmicPetAbilities() {
     if (gameState.equippedPet === 'cosming_dragon') {
-        // 50% time rewind chance on wrong guess
         if (Math.random() < 0.5) {
-            // Show cosmic rewind effect
             const effect = document.createElement('div');
             effect.className = 'time-rewind-effect';
             effect.style.background = 'linear-gradient(45deg, rgba(138, 43, 226, 0.1), rgba(75, 0, 130, 0.1))';
             document.body.appendChild(effect);
             
             setTimeout(() => effect.remove(), 1000);
-            
-            // Play cosmic sound
             playSound('cosmic');
             
             return true;
         }
     }
     
-    // Elder God Butterfly - never fail streak shield
     if (gameState.equippedPet === 'elder_god_butterfly' && gameState.petAbilities.elder_god_butterfly.streakShield) {
         return true;
     }
     
-    // Carlito Cocofanto - 50% chance for only 2 options
     if (gameState.equippedPet === 'carlito_cocofanto' && Math.random() < 0.5) {
         gameState.optionsCount = 2;
         return true;
     }
     
-    // Carlito Cocofanto - 40% chance to reveal gold
     if (gameState.equippedPet === 'carlito_cocofanto' && Math.random() < 0.4) {
         gameState.revealedOptions.push(gameState.goldPosition);
         generateOptions();
@@ -2020,7 +2246,6 @@ function applyCosmicPetAbilities() {
         return true;
     }
     
-    // Tungtung Sahur - 50% chance to revive
     if (gameState.equippedPet === 'tungtung_sahur' && 
         gameState.lives === 0 && 
         Math.random() < gameState.petAbilities.tungtung_sahur.reviveChance) {
@@ -2030,18 +2255,15 @@ function applyCosmicPetAbilities() {
         return true;
     }
     
-    // 3DM4RK - 50% time rewind
     if (gameState.equippedPet === '3dm4rk' && 
         Math.random() < gameState.petAbilities['3dm4rk'].timeRewindChance) {
         return true;
     }
     
-    // Entity - 50% auto-pilot
     if (gameState.equippedPet === 'entity' && 
         Math.random() < gameState.petAbilities.entity.autoPilotChance &&
         gameState.gameActive &&
         !gameState.isSelecting) {
-        // Auto-select the correct option
         setTimeout(() => {
             if (gameState.gameActive) {
                 gameState.selectedOption = gameState.goldPosition;
@@ -2056,9 +2278,100 @@ function applyCosmicPetAbilities() {
     return false;
 }
 
+// ====== AVATAR AURA SYSTEM ======
+function applyAvatarAuraEffects() {
+    const avatar = shopItems.avatars.find(a => a.id === gameState.equippedAvatar);
+    if (!avatar || !avatar.attributes || !avatar.attributes.aura) return;
+    
+    // Apply aura to avatar display
+    const avatarDisplay = document.getElementById('avatar-frame-display');
+    if (avatarDisplay) {
+        switch(avatar.attributes.auraType) {
+            case 'flame':
+                avatarDisplay.style.boxShadow = `0 0 20px ${avatar.attributes.auraColor}, 0 0 40px ${avatar.attributes.auraColor}`;
+                avatarDisplay.style.animation = 'flameAura 1.5s infinite alternate';
+                break;
+            case 'cosmic':
+                avatarDisplay.style.boxShadow = `0 0 20px ${avatar.attributes.auraColor}, 0 0 40px ${avatar.attributes.auraColor}, 0 0 60px ${avatar.attributes.auraColor}80`;
+                avatarDisplay.style.animation = 'cosmicAura 2s infinite alternate';
+                break;
+            case 'rainbow':
+                avatarDisplay.style.animation = 'rainbowAura 3s infinite alternate';
+                break;
+            default:
+                avatarDisplay.style.boxShadow = `0 0 15px ${avatar.attributes.auraColor || '#00ffcc'}`;
+                break;
+        }
+    }
+    
+    // Apply aura to options if game is active
+    if (gameState.gameActive) {
+        const options = document.querySelectorAll('.option');
+        options.forEach(option => {
+            if (!option.classList.contains('revealed') && !option.classList.contains('eliminated')) {
+                switch(avatar.attributes.auraType) {
+                    case 'flame':
+                        option.style.boxShadow = `0 0 10px ${avatar.attributes.auraColor}, 0 0 20px ${avatar.attributes.auraColor}80`;
+                        option.style.animation = 'optionFlame 2s infinite alternate';
+                        break;
+                    case 'cosmic':
+                        option.style.boxShadow = `0 0 15px ${avatar.attributes.auraColor}, 0 0 30px ${avatar.attributes.auraColor}80`;
+                        option.style.animation = 'cosmicPulse 2s infinite';
+                        break;
+                    case 'rainbow':
+                        option.style.animation = 'rainbowGlow 4s infinite';
+                        break;
+                    default:
+                        option.style.boxShadow = `0 0 10px ${avatar.attributes.auraColor || '#00ffcc'}`;
+                        break;
+                }
+            }
+        });
+    }
+}
+
+function removeAvatarAuraEffects() {
+    const avatarDisplay = document.getElementById('avatar-frame-display');
+    if (avatarDisplay) {
+        avatarDisplay.style.boxShadow = '';
+        avatarDisplay.style.animation = '';
+    }
+    
+    if (gameState.gameActive) {
+        const options = document.querySelectorAll('.option');
+        options.forEach(option => {
+            if (!option.classList.contains('gold') && !option.classList.contains('empty')) {
+                option.style.boxShadow = '';
+                option.style.animation = '';
+            }
+        });
+    }
+}
+
+function applyAvatarBlessings(goldEarned) {
+    const avatar = shopItems.avatars.find(a => a.id === gameState.equippedAvatar);
+    if (!avatar || !avatar.attributes || avatar.attributes.blessing === 0) return goldEarned;
+    
+    let bonus = 0;
+    
+    // Check for streak-based bonuses
+    if (avatar.attributes.streakBonus) {
+        gameState.avatarStreakCounter++;
+        if (gameState.avatarStreakCounter >= avatar.attributes.streakBonus) {
+            bonus += Math.round(goldEarned * avatar.attributes.blessing);
+            gameState.avatarStreakCounter = 0;
+            showNotification(`${avatar.name} blessing activated! +${bonus} gold!`, 'success');
+        }
+    } else {
+        // Apply blessing on every correct guess
+        bonus += Math.round(goldEarned * avatar.attributes.blessing);
+    }
+    
+    return bonus;
+}
+
 // ====== GAME FUNCTIONS ======
 function initGame() {
-    // Reset game state (but keep gold and stats)
     gameState.level = 0;
     gameState.score = 0;
     gameState.lives = gameState.maxLives;
@@ -2074,8 +2387,12 @@ function initGame() {
     };
     gameState.petStreakCounter = 0;
     gameState.isSelecting = false;
+    gameState.avatarStreakCounter = 0;
+    gameState.bossBattleActive = false;
+    gameState.rpsGameActive = false;
+    gameState.rpsLives = 3;
+    gameState.bossConsecutiveWins = 0;
     
-    // Reset pet abilities for new game
     if (gameState.petAbilities.rainbow_phoenix) {
         gameState.petAbilities.rainbow_phoenix.resurrectionUsed = false;
     }
@@ -2084,27 +2401,18 @@ function initGame() {
         gameState.petAbilities.time_travel_turtle.rewindUsed = false;
     }
     
-    // Stop timer
     stopGameTimer();
-    
-    // Stop any playing music
     stopBackgroundMusic();
     stopCosmicMusic();
     
-    // Stop Meowl music
     const meowlMusic = document.getElementById('meowl-music');
     if (meowlMusic) {
         meowlMusic.pause();
         meowlMusic.currentTime = 0;
     }
     
-    // Stop Lucky Cat interval
-    if (gameState.luckyCatInterval) {
-        clearInterval(gameState.luckyCatInterval);
-        gameState.luckyCatInterval = null;
-    }
+    stopLuckyCatInterval();
     
-    // Update displays
     updateDisplays();
     updateLivesDisplay();
     updatePowerUpButtons();
@@ -2114,7 +2422,6 @@ function initGame() {
     updateMusicControls();
     updatePetEffectDisplays();
     
-    // Reset UI
     document.getElementById('instruction').textContent = "Click 'Start Game' to begin your treasure hunt!";
     document.getElementById('difficulty-info').textContent = "Difficulty: Easy (2 options)";
     document.getElementById('options-container').innerHTML = '';
@@ -2124,18 +2431,20 @@ function initGame() {
     document.getElementById('level-progress-bar').style.width = '0%';
     document.getElementById('start-btn').disabled = false;
     
-    // Generate empty options
+    // Show RPS button if unlocked
+    if (gameState.rockPaperScissorsUnlocked) {
+        const rpsBtn = document.getElementById('rps-btn');
+        const mobileRpsBtn = document.getElementById('mobile-rps-btn');
+        if (rpsBtn) rpsBtn.style.display = 'inline-flex';
+        if (mobileRpsBtn) mobileRpsBtn.style.display = 'flex';
+    }
+    
     generateEmptyOptions();
-    
-    // Hide loading overlay
     hideLoading();
-    
-    // Update pet effects
     updatePetEffects();
-    
-    // Apply theme effects
     applyTheme(gameState.activeTheme);
     createPetThemeEffects();
+    applyAvatarAuraEffects();
     
     saveGameState();
 }
@@ -2155,7 +2464,6 @@ function generateEmptyOptions() {
 }
 
 function startGame() {
-    console.log("Start Game button clicked");
     if (gameState.gameActive) return;
     
     gameState.gameActive = true;
@@ -2163,24 +2471,16 @@ function startGame() {
     document.getElementById('start-btn').disabled = true;
     gameState.totalGames++;
     
-    // Start game timer
     startGameTimer();
-    
-    // Play start sound
     playSound('start');
-    
-    // Apply pet effects
     updatePetEffects();
-    
-    // Apply Meowl abilities
     applyMeowlAbilities();
+    applyAvatarAuraEffects();
     
-    // Start Lucky Cat passive gold if equipped
     if (gameState.equippedPet === 'lucky_cat') {
         startLuckyCatPassiveGold();
     }
     
-    // Start background music if music dragon is equipped
     if (gameState.equippedPet === 'music_dragon') {
         gameState.musicEnabled = true;
         updateMusicControls();
@@ -2194,13 +2494,10 @@ function startBackgroundMusic() {
     const bgMusic = document.getElementById('background-music');
     if (!bgMusic) return;
     
-    // Set volume
     bgMusic.volume = gameState.musicVolume;
     
-    // Check if already playing
     if (!bgMusic.paused) return;
     
-    // Play with promise
     const playPromise = bgMusic.play();
     
     if (playPromise !== undefined) {
@@ -2208,46 +2505,9 @@ function startBackgroundMusic() {
             console.log("Background music started");
             updateMusicButton(true);
         }).catch(error => {
-            console.log("Music play failed, will use Web Audio API:", error);
-            // If external music fails, use Web Audio API for background tones
-            startWebAudioBackgroundMusic();
+            console.log("Music play failed:", error);
         });
     }
-}
-
-function startWebAudioBackgroundMusic() {
-    // Create a simple background music using Web Audio API
-    console.log("Starting Web Audio background music");
-    
-    // Create oscillator for background music
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 261.63; // C4
-    
-    gainNode.gain.value = 0.05; // Very quiet background
-    
-    // Create a simple melody pattern
-    let currentTime = audioContext.currentTime;
-    
-    // Play a simple 4-note pattern
-    const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
-    
-    notes.forEach((freq, index) => {
-        oscillator.frequency.setValueAtTime(freq, currentTime + index * 0.5);
-    });
-    
-    oscillator.start();
-    
-    // Store reference to stop later
-    gameState.backgroundOscillator = oscillator;
-    gameState.backgroundGainNode = gainNode;
-    
-    updateMusicButton(true);
 }
 
 function stopBackgroundMusic() {
@@ -2257,20 +2517,17 @@ function stopBackgroundMusic() {
         bgMusic.currentTime = 0;
     }
     
-    // Also stop Web Audio API background music if playing
     if (gameState.backgroundOscillator) {
         gameState.backgroundOscillator.stop();
         gameState.backgroundOscillator = null;
     }
     
-    // Stop Meowl music
     const meowlMusic = document.getElementById('meowl-music');
     if (meowlMusic) {
         meowlMusic.pause();
         meowlMusic.currentTime = 0;
     }
     
-    // Stop cosmic music
     stopCosmicMusic();
     
     updateMusicButton(false);
@@ -2300,37 +2557,24 @@ function nextLevel() {
     gameState.isSelecting = false;
     gameState.activePowerUps.tagnaUsed = false;
     
-    // Reset time rewind ability for new level
     if (gameState.petAbilities.time_travel_turtle) {
         gameState.petAbilities.time_travel_turtle.rewindAvailable = true;
     }
     
-    // Calculate difficulty
     gameState.optionsCount = Math.min(2 + Math.floor(gameState.level / 5), 10);
     
-    // Apply pet effects that reduce options
     applyPetOptionEffects();
-    
-    // Generate gold position (apply pet effects)
     gameState.goldPosition = Math.floor(Math.random() * gameState.optionsCount);
     
-    // Apply pet luck effects
     applyPetLuckEffects();
-    
-    // Apply Lucky Cat game effect
     applyLuckyCatGameEffect();
-    
-    // Apply cosmic pet effects
     applyCosmicPetAbilities();
     
-    // Update UI
     updateLevelUI();
     generateOptions();
     
-    // Hide next button
     document.getElementById('next-btn').style.display = 'none';
     
-    // Show time rewind button if turtle is equipped and ability is available
     if (gameState.equippedPet === 'time_travel_turtle' && 
         gameState.petAbilities.time_travel_turtle.rewindAvailable) {
         document.getElementById('time-rewind-btn').style.display = 'inline-flex';
@@ -2338,23 +2582,18 @@ function nextLevel() {
         document.getElementById('time-rewind-btn').style.display = 'none';
     }
     
-    // Reset hint usage
     gameState.activePowerUps.hintUsed = false;
-    
-    // Update power-up buttons
     updatePowerUpButtons();
     
     saveGameState();
 }
 
 function applyPetOptionEffects() {
-    // 3DM4RK - infinite 2 options
     if (gameState.equippedPet === '3dm4rk') {
         gameState.optionsCount = 2;
         return;
     }
     
-    // Carlito Cocofanto - 50% chance for 2 options
     if (gameState.equippedPet === 'carlito_cocofanto' && Math.random() < 0.5) {
         gameState.optionsCount = 2;
         return;
@@ -2362,9 +2601,7 @@ function applyPetOptionEffects() {
 }
 
 function applyPetLuckEffects() {
-    // Apply luck boost from Music Dragon
     if (gameState.equippedPet === 'music_dragon' && Math.random() < 0.5) {
-        // 50% chance to reveal one wrong option at start
         const wrongOptions = Array.from({length: gameState.optionsCount}, (_, i) => i)
             .filter(i => i !== gameState.goldPosition);
         
@@ -2374,10 +2611,9 @@ function applyPetLuckEffects() {
         }
     }
     
-    // Cosming Dragon - 50% chance to skip levels
     if (gameState.equippedPet === 'cosming_dragon' && 
         Math.random() < gameState.petAbilities.cosming_dragon.levelSkipChance) {
-        const skipAmount = Math.floor(Math.random() * 14) + 2; // 2-15 levels
+        const skipAmount = Math.floor(Math.random() * 14) + 2;
         gameState.level += skipAmount;
         showNotification(`Cosming Dragon skipped ${skipAmount} levels!`, 'success');
     }
@@ -2387,13 +2623,13 @@ function updateLevelUI() {
     const difficulty = gameState.level < 10 ? 'Easy' : gameState.level < 30 ? 'Medium' : gameState.level < 60 ? 'Hard' : 'Extreme';
     document.getElementById('difficulty-info').textContent = `Difficulty: ${difficulty} (${gameState.optionsCount} options)`;
     
-    // Add pet effect info if pet is equipped
     let instruction = `Level ${gameState.level}: Find the gold!`;
     const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
+    const avatar = shopItems.avatars.find(a => a.id === gameState.equippedAvatar);
+    
     if (pet && pet.id !== 'none') {
         instruction += ` <span style="color:${pet.color};font-size:0.9em">(Pet: ${pet.name} - ${pet.effect})</span>`;
         
-        // Special messages for pets
         if (pet.id === 'music_dragon' && gameState.musicEnabled) {
             instruction += ` <span style="color:#9c88ff"><i class="fas fa-music"></i></span>`;
         }
@@ -2413,6 +2649,18 @@ function updateLevelUI() {
             instruction += ` <span style="color:#8a2be2"><i class="fas fa-star"></i> COSMIC PET</span>`;
         }
     }
+    
+    if (avatar && avatar.attributes && avatar.attributes.blessing > 0) {
+        if (avatar.attributes.streakBonus) {
+            instruction += ` <span style="color:${avatar.color}"><i class="${avatar.icon}"></i> ${avatar.name}: ${(avatar.attributes.blessing * 100)}% bonus every ${avatar.attributes.streakBonus} streaks (${avatar.attributes.streakBonus - gameState.avatarStreakCounter} left)</span>`;
+        } else {
+            instruction += ` <span style="color:${avatar.color}"><i class="${avatar.icon}"></i> ${avatar.name}: ${(avatar.attributes.blessing * 100)}% blessing active</span>`;
+        }
+        if (avatar.attributes.aura) {
+            instruction += ` <span style="color:${avatar.attributes.auraColor || avatar.color}"><i class="fas fa-magic"></i> Aura Active</span>`;
+        }
+    }
+    
     document.getElementById('instruction').innerHTML = instruction;
 }
 
@@ -2425,27 +2673,26 @@ function generateOptions() {
         option.className = 'option';
         option.dataset.index = i;
         
-        // Check if this option has been revealed
         if (gameState.revealedOptions.includes(i)) {
-            // If it's the gold position, show gold
             if (i === gameState.goldPosition) {
                 option.className = 'option gold';
                 option.innerHTML = '<i class="fas fa-gem"></i>';
                 option.style.pointerEvents = 'none';
             } else {
-                // Otherwise show empty
                 option.className = 'option empty';
                 option.innerHTML = '<i class="fas fa-times"></i>';
                 option.style.pointerEvents = 'none';
             }
         } else {
-            // Not revealed yet - show question mark and make clickable
             option.innerHTML = '<i class="fas fa-question"></i>';
             option.addEventListener('click', () => selectOption(i));
         }
         
         container.appendChild(option);
     }
+    
+    // Apply aura effects to new options
+    applyAvatarAuraEffects();
 }
 
 function selectOption(index) {
@@ -2469,80 +2716,70 @@ function handleCorrectGuess() {
     gameState.petStreakCounter++;
     gameState.totalCorrect++;
     
-    // Update highest streak
     if (gameState.streak > gameState.highestStreak) {
         gameState.highestStreak = gameState.streak;
     }
     
-    // Calculate base gold earned
     let goldEarned = 10 + Math.floor(gameState.level / 2) + (gameState.streak * 2);
     
-    // Apply pet-specific multipliers
     applyPetGoldMultipliers(goldEarned);
     
-    // Apply gold rush multiplier
     if (gameState.activePowerUps.goldrush) {
         goldEarned *= 2;
         gameState.activePowerUps.goldrush = false;
     }
     
-    // Apply theme bonus
     if (gameState.activeTheme !== 'default') {
         goldEarned = Math.round(goldEarned * gameState.themeBonuses[gameState.activeTheme]);
     }
     
-    // Apply pet bonuses
     const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
     let petBonus = 0;
     let petMessage = '';
     
     if (pet && pet.id !== 'none') {
-        // Apply pet-specific gold bonuses
         petBonus = applyPetGoldBonus(pet, goldEarned);
         if (petBonus > 0) {
             goldEarned += petBonus;
             petMessage = ` +${petBonus} from ${pet.name}`;
         }
         
-        // Special pet abilities on correct guess
         applySpecialPetAbilitiesOnCorrect();
     }
     
-    // Update game state
+    // Apply avatar blessings
+    const avatarBonus = applyAvatarBlessings(goldEarned);
+    if (avatarBonus > 0) {
+        goldEarned += avatarBonus;
+        petMessage += ` +${avatarBonus} from avatar blessing`;
+    }
+    
     gameState.gold += goldEarned;
     gameState.totalGoldEarned += goldEarned;
     gameState.score += 100 * gameState.streak;
     
-    // Update the display first
     generateOptions();
-    
-    // Update displays
     updateDisplays();
     updatePowerUpButtons();
     
-    // Show success message with pet effect
     let message = `<span style="color:#51cf66">✓ Correct! Gold found! +${goldEarned} Gold${petMessage}</span>`;
     if (pet && pet.id !== 'none') {
         message += ` <span style="color:${pet.color}"><i class="${pet.icon}"></i></span>`;
     }
+    
+    const avatar = shopItems.avatars.find(a => a.id === gameState.equippedAvatar);
+    if (avatar && avatar.attributes && avatar.attributes.blessing > 0) {
+        message += ` <span style="color:${avatar.color}"><i class="${avatar.icon}"></i></span>`;
+    }
+    
     document.getElementById('instruction').innerHTML = message;
     
-    // Play correct sound
     playSound('correct');
-    
-    // Add gold effect
     showGoldEffect(goldEarned, "Gold Earned!");
-    
-    // Show notification
     showNotification(`Correct! +${goldEarned} Gold`, 'success');
-    
-    // Play level up sound
     playSound('levelup');
-    
-    // Check for perfect streak bonuses
     checkPerfectStreakBonuses();
     
-    // Auto-proceed to next level after delay
     setTimeout(() => {
         gameState.isSelecting = false;
         nextLevel();
@@ -2552,7 +2789,6 @@ function handleCorrectGuess() {
 }
 
 function applyPetGoldMultipliers(baseGold) {
-    // 3DM4RK - x100 gold
     if (gameState.equippedPet === '3dm4rk') {
         return baseGold * 100;
     }
@@ -2565,18 +2801,14 @@ function applyPetGoldBonus(pet, baseGold) {
     
     switch(pet.bonusType) {
         case 'correct':
-            // Golden Eagle: +10 gold on every correct guess
             bonus = pet.bonusAmount;
             break;
             
         case 'streak':
-            // Check streak condition for pets
             if (gameState.petStreakCounter >= pet.bonusCondition) {
                 if (pet.id === 'phoenix') {
-                    // Phoenix: x100 gold every 3 streaks
                     bonus = baseGold * (pet.bonusAmount - 1);
                 } else {
-                    // Other streak pets: fixed amount
                     bonus = pet.bonusAmount;
                 }
                 gameState.petStreakCounter = 0;
@@ -2584,52 +2816,37 @@ function applyPetGoldBonus(pet, baseGold) {
             break;
             
         case 'passive':
-            // Lucky Cat: Already gives passive gold, but add bonus for correct guess
             if (pet.id === 'lucky_cat') {
-                bonus = 50; // Extra bonus for correct guess
+                bonus = 50;
             }
             break;
             
         case 'resurrection':
-            // Rainbow Phoenix: 25% gold bonus
             if (pet.id === 'rainbow_phoenix') {
                 bonus = Math.round(baseGold * pet.bonusAmount);
             }
             break;
             
         case 'rewind':
-            // Time Travel Turtle: 30% gold bonus
             if (pet.id === 'time_travel_turtle') {
                 bonus = Math.round(baseGold * pet.bonusAmount);
             }
             break;
             
         case 'ultra_rare':
-            // Diamond Centipede: multiply diamonds by 10
             if (pet.id === 'diamond_centipede') {
                 bonus = gameState.diamonds * pet.bonusAmount;
                 gameState.diamonds += bonus;
                 showDiamondEffect(bonus);
-            }
-            // Elder God Butterfly: fixed amount
-            else if (pet.id === 'elder_god_butterfly') {
+            } else if (pet.id === 'elder_god_butterfly') {
                 bonus = pet.bonusAmount;
             }
             break;
             
         case 'godly':
-            // Humanoid Gold Seeker: gold × streak
             if (pet.id === 'humanoid_gold_seeker') {
                 bonus = gameState.gold * gameState.streak;
             }
-            break;
-            
-        case 'cosmic':
-            // Cosming Dragon: various bonuses already applied in passive
-            break;
-            
-        case 'cosmic_shop':
-            // 3DM4RK: x100 gold already applied in multiplier
             break;
     }
     
@@ -2637,12 +2854,10 @@ function applyPetGoldBonus(pet, baseGold) {
 }
 
 function applySpecialPetAbilitiesOnCorrect() {
-    // Crazy Dog - 0.3% chance to obtain pet every 5 streak
     if (gameState.equippedPet === 'crazy_dog' && 
         gameState.streak % gameState.petAbilities.crazy_dog.perfectStreak === 0) {
         const chance = gameState.score * gameState.gold * gameState.petAbilities.crazy_dog.bonusAmount;
         if (Math.random() < chance) {
-            // Player obtains the Crazy Dog pet (already has it, so give bonus)
             gameState.diamonds += 100;
             showNotification('Crazy Dog special: +100 Diamonds!', 'success');
             showDiamondEffect(100);
@@ -2651,17 +2866,15 @@ function applySpecialPetAbilitiesOnCorrect() {
 }
 
 function checkPerfectStreakBonuses() {
-    // Croco Boy - perfect 20 streak bonus
     if (gameState.equippedPet === 'croco_boy' && 
         gameState.streak >= gameState.petAbilities.croco_boy.perfectStreak &&
         !gameState.petAbilities.croco_boy.meditationActive) {
         
         gameState.petAbilities.croco_boy.meditationActive = true;
-        gameState.petAbilities.croco_boy.meditationEndTime = Date.now() + 30000; // 30 seconds
+        gameState.petAbilities.croco_boy.meditationEndTime = Date.now() + 30000;
         
         showNotification('Croco Boy started meditation! Result in 30 seconds...', 'info');
         
-        // Start meditation countdown
         setTimeout(() => {
             if (gameState.petAbilities.croco_boy.meditationActive) {
                 const diamondBonus = gameState.streak * gameState.diamonds * gameState.petAbilities.croco_boy.bonusAmount;
@@ -2680,7 +2893,6 @@ function checkPerfectStreakBonuses() {
 function handleWrongGuess() {
     let shouldLoseLife = true;
     
-    // Check for cosmic pet abilities first
     const cosmicProtected = applyCosmicPetAbilities();
     if (cosmicProtected && 
         (gameState.equippedPet === 'elder_god_butterfly' || 
@@ -2690,15 +2902,13 @@ function handleWrongGuess() {
         gameState.isSelecting = false;
         gameState.selectedOption = null;
         
-        // Regenerate options to re-enable clicking
         setTimeout(() => {
             generateOptions();
         }, 1000);
         
-        return; // Exit early, no life lost
+        return;
     }
     
-    // Check for Meowl protection
     if (gameState.equippedPet === 'meowl') {
         const meowlProtected = useMeowlExtraAttempt();
         if (meowlProtected) {
@@ -2706,16 +2916,14 @@ function handleWrongGuess() {
             gameState.isSelecting = false;
             gameState.selectedOption = null;
             
-            // Regenerate options to re-enable clicking
             setTimeout(() => {
                 generateOptions();
             }, 1000);
             
-            return; // Exit early, no life lost
+            return;
         }
     }
     
-    // Check for Rainbow Phoenix resurrection
     if (shouldLoseLife && gameState.equippedPet === 'rainbow_phoenix') {
         const phoenixResurrected = checkRainbowPhoenixResurrection();
         if (phoenixResurrected) {
@@ -2723,12 +2931,10 @@ function handleWrongGuess() {
         }
     }
     
-    // Check for Meowl health restore
     if (shouldLoseLife) {
         checkMeowlHealthRestore();
     }
     
-    // Check for Tungtung Sahur revive
     if (shouldLoseLife && gameState.equippedPet === 'tungtung_sahur') {
         if (Math.random() < gameState.petAbilities.tungtung_sahur.reviveChance) {
             shouldLoseLife = false;
@@ -2736,7 +2942,6 @@ function handleWrongGuess() {
         }
     }
     
-    // Stop background music if streak is broken and Music Dragon is equipped
     if (gameState.equippedPet === 'music_dragon' && !gameState.permanentPowerUps.streakShield) {
         const bgMusic = document.getElementById('background-music');
         if (bgMusic) {
@@ -2745,10 +2950,10 @@ function handleWrongGuess() {
         }
     }
     
-    // Reset streak and pet streak counter
     if (!gameState.permanentPowerUps.streakShield && shouldLoseLife) {
         gameState.streak = 0;
         gameState.petStreakCounter = 0;
+        gameState.avatarStreakCounter = 0; // Reset avatar streak counter on wrong guess
     }
     
     if (shouldLoseLife) {
@@ -2756,21 +2961,16 @@ function handleWrongGuess() {
         gameState.totalWrong++;
     }
     
-    // Update the display
     generateOptions();
-    
-    // Update displays
     updateLivesDisplay();
     updateDisplays();
     updatePowerUpButtons();
     
-    // Show failure message
     let message = `<span style="color:#ff6b6b">✗ Wrong! That was empty!</span>`;
     if (gameState.equippedPet === 'music_dragon' && !gameState.permanentPowerUps.streakShield) {
         message = `<span style="color:#ff6b6b">✗ Wrong! Music stopped!</span>`;
     }
     
-    // Show time rewind button if turtle is equipped and ability is available
     if (gameState.equippedPet === 'time_travel_turtle' && 
         gameState.petAbilities.time_travel_turtle.rewindAvailable &&
         shouldLoseLife) {
@@ -2779,29 +2979,23 @@ function handleWrongGuess() {
     }
     
     document.getElementById('instruction').innerHTML = message;
-    
-    // Play wrong sound
     playSound('wrong');
     
-    // Show notification
     if (shouldLoseLife) {
         showNotification('Wrong guess!', 'error');
     }
     
-    // Check if game over
     if (gameState.lives <= 0 && shouldLoseLife) {
         setTimeout(() => {
             gameOver();
             gameState.isSelecting = false;
         }, 1000);
     } else {
-        // Allow selecting again after delay
         setTimeout(() => {
             if (!gameState.petAbilities.time_travel_turtle?.rewindAvailable || 
                 gameState.equippedPet !== 'time_travel_turtle') {
                 gameState.isSelecting = false;
                 gameState.selectedOption = null;
-                // Regenerate options to re-enable clicking
                 generateOptions();
             }
         }, 1000);
@@ -2814,39 +3008,23 @@ function gameOver() {
     gameState.gameActive = false;
     gameState.isSelecting = false;
     
-    // Stop timer
     stopGameTimer();
-    
-    // Stop background music
     stopBackgroundMusic();
     stopCosmicMusic();
+    stopLuckyCatInterval();
     
-    // Stop Lucky Cat interval
-    if (gameState.luckyCatInterval) {
-        clearInterval(gameState.luckyCatInterval);
-        gameState.luckyCatInterval = null;
-    }
-    
-    // Update high score
     if (gameState.score > gameState.highScore) {
         gameState.highScore = gameState.score;
     }
     
-    // Update final stats
     document.getElementById('final-level').textContent = gameState.level;
     document.getElementById('final-gold').textContent = gameState.gold;
     document.getElementById('final-score').textContent = gameState.score;
     document.getElementById('final-high-score').textContent = gameState.highScore;
     
-    // Show game over modal
     document.getElementById('game-over').style.display = 'flex';
-    
-    // Play game over sound
     playSound('gameover');
-    
-    // Update power-up buttons
     updatePowerUpButtons();
-    
     saveGameState();
 }
 
@@ -2861,9 +3039,8 @@ function updateDisplays() {
     document.getElementById('lives-display').textContent = gameState.lives;
     document.getElementById('high-score-display').textContent = gameState.highScore;
     
-    // Update progress bar
     const progress = (gameState.level / gameState.maxLevels) * 100;
-    document.getElementById('level-progress-bar').style.width = `${progress}%`;
+    document.getElementById('level-progress-bar').style.width = `${Math.min(progress, 100)}%`;
 }
 
 function updateLivesDisplay() {
@@ -2904,7 +3081,6 @@ function loadPremiumPets() {
     
     container.innerHTML = '';
     
-    // Filter premium pets (jester_magician, 3dm4rk, entity)
     const premiumPets = shopItems.pets.filter(pet => 
         ['jester_magician', '3dm4rk', 'entity'].includes(pet.id)
     );
@@ -2923,19 +3099,14 @@ function loadShopCategoryItems(items, container, category) {
     container.innerHTML = '';
     
     items.forEach(item => {
-        // For Lucky Cat, check if it's been redeemed
         if (item.id === 'lucky_cat' && !gameState.redeemedCodes.includes('EDMARKISADMIN')) {
-            // Don't show Lucky Cat if code hasn't been redeemed
             return;
         }
         
-        // For Meowl, check if it's been redeemed
         if (item.id === 'meowl' && !gameState.redeemedCodes.includes('ILOVEMEOWL')) {
-            // Don't show Meowl if code hasn't been redeemed
             return;
         }
         
-        // For cosmic pets from draw, only show if owned
         if (item.isCosmic && item.price === 0 && !gameState.purchasedItems.includes(item.id)) {
             return;
         }
@@ -2946,12 +3117,10 @@ function loadShopCategoryItems(items, container, category) {
             (category === 'frames' && gameState.equippedFrame === item.id) ||
             (category === 'pets' && gameState.equippedPet === item.id);
         
-        // Special handling for redeem-only items
         let canPurchase = true;
         let purchaseText = 'Buy';
         let priceDisplay = `<i class="fas fa-coins"></i> ${item.price} Gold`;
         
-        // Check if price is in diamonds
         if (item.priceInDiamonds) {
             priceDisplay = `<i class="fas fa-gem diamond-currency"></i> ${item.price} Diamonds`;
             canPurchase = gameState.diamonds >= item.price;
@@ -2964,14 +3133,13 @@ function loadShopCategoryItems(items, container, category) {
                 purchaseText = isEquipped ? 'Equipped' : 'Equip';
             } else {
                 purchaseText = 'Claim Pet';
-                canPurchase = true; // Can claim if redeemed
+                canPurchase = true;
             }
         }
         
         const itemElement = document.createElement('div');
         itemElement.className = `shop-item ${isPurchased ? 'purchased' : ''} ${isEquipped ? 'equipped' : ''} ${item.rarity ? 'rarity-' + item.rarity : ''}`;
         
-        // Add special classes for premium pets
         if (item.godTier) {
             itemElement.classList.add('godtier');
         } else if (item.rarity === 'limited') {
@@ -2981,9 +3149,10 @@ function loadShopCategoryItems(items, container, category) {
             }
         } else if (item.isCosmic) {
             itemElement.classList.add('cosmic');
+        } else if (item.rarity === 'divine' || item.rarity === 'cosmic') {
+            itemElement.classList.add('divine');
         }
         
-        // Add rarity class for styling
         if (item.rarity) {
             itemElement.classList.add(item.rarity);
         }
@@ -2992,12 +3161,10 @@ function loadShopCategoryItems(items, container, category) {
         
         if (!isPurchased) {
             if (item.id === 'lucky_cat' || item.id === 'meowl') {
-                // Redeem-only pets claim button
                 actionButton = `<button class="shop-item-action claim" onclick="claimRedeemPet('${item.id}')">
                         ${purchaseText}
                     </button>`;
             } else {
-                // Regular purchase button
                 actionButton = `<button class="shop-item-action" onclick="buyItem('${item.id}', '${category}', ${item.price}, ${item.priceInDiamonds || false})" ${canPurchase ? '' : 'disabled'}>
                         ${purchaseText}
                     </button>`;
@@ -3014,6 +3181,11 @@ function loadShopCategoryItems(items, container, category) {
             }
         }
         
+        let description = item.effect || '';
+        if (item.attributes && item.attributes.description) {
+            description = item.attributes.description;
+        }
+        
         itemElement.innerHTML = `
             ${item.rarity && item.rarity !== 'common' ? 
                 `<div class="rarity-badge rarity-${item.rarity}">${item.rarity.toUpperCase()}${item.rarity === 'limited' ? ' EDITION' : ''}${item.isCosmic ? ' COSMIC' : ''}</div>` : ''
@@ -3022,7 +3194,7 @@ function loadShopCategoryItems(items, container, category) {
                 <i class="${item.icon || 'fas fa-question'}"></i>
             </div>
             <div class="shop-item-title">${item.name}</div>
-            ${item.effect ? `<div class="shop-item-description" style="font-size:0.7rem; color:#aaa; margin-bottom:5px; text-align:center;">${item.effect}</div>` : ''}
+            ${description ? `<div class="shop-item-description">${description}</div>` : ''}
             ${item.id !== 'lucky_cat' && item.id !== 'meowl' ? `<div class="shop-item-price">
                 ${priceDisplay}
             </div>` : '<div class="shop-item-price" style="color:#ff6b9d"><i class="fas fa-gift"></i> Redeem Code Only</div>'}
@@ -3033,7 +3205,6 @@ function loadShopCategoryItems(items, container, category) {
 }
 
 function claimRedeemPet(petId) {
-    // Check if code has been redeemed
     let codeRedeemed = false;
     if (petId === 'lucky_cat') {
         codeRedeemed = gameState.redeemedCodes.includes('EDMARKISADMIN');
@@ -3046,17 +3217,13 @@ function claimRedeemPet(petId) {
         return;
     }
     
-    // Check if already purchased
     if (gameState.purchasedItems.includes(petId)) {
         showNotification(`You already have this pet!`, 'info');
         return;
     }
     
-    // Add pet to purchased items
     gameState.purchasedItems.push(petId);
     gameState.totalPets++;
-    
-    // Auto-equip the pet
     equipItem(petId, 'pets');
     
     updateDisplays();
@@ -3092,11 +3259,8 @@ function buyItem(itemId, category, price, priceInDiamonds = false) {
         }
         
         gameState.purchasedItems.push(itemId);
-        
-        // Auto-equip the item
         equipItem(itemId, category);
         
-        // Update pet count
         if (category === 'pets' && itemId !== 'none') {
             gameState.totalPets++;
         }
@@ -3113,7 +3277,6 @@ function buyItem(itemId, category, price, priceInDiamonds = false) {
         
         playSound('purchase');
         
-        // Show special message for pets
         if (category === 'pets' && itemId !== 'none') {
             const pet = shopItems.pets.find(p => p.id === itemId);
             if (pet) {
@@ -3121,7 +3284,6 @@ function buyItem(itemId, category, price, priceInDiamonds = false) {
                     showGoldEffect(0, `${pet.name} equipped!`);
                 }, 500);
                 
-                // Special handling for different pets
                 if (pet.id === 'music_dragon') {
                     document.getElementById('music-controls').style.display = 'flex';
                     if (!gameState.musicEnabled) {
@@ -3156,6 +3318,14 @@ function buyItem(itemId, category, price, priceInDiamonds = false) {
             }
         }
         
+        if (category === 'avatars') {
+            const avatar = shopItems.avatars.find(a => a.id === itemId);
+            if (avatar) {
+                applyAvatarAuraEffects();
+                showNotification(`${avatar.name} equipped! ${avatar.effect}`, 'success');
+            }
+        }
+        
         showNotification(`Purchased ${itemId}!`, 'success');
     } else {
         if (priceInDiamonds) {
@@ -3170,16 +3340,15 @@ function equipItem(itemId, category) {
     switch(category) {
         case 'avatars':
             gameState.equippedAvatar = itemId;
+            removeAvatarAuraEffects();
+            applyAvatarAuraEffects();
             break;
         case 'frames':
             gameState.equippedFrame = itemId;
             break;
         case 'pets':
             gameState.equippedPet = itemId;
-            // Reset pet streak counter when changing pets
             gameState.petStreakCounter = 0;
-            
-            // Handle pet-specific actions
             handlePetEquip(itemId);
             break;
     }
@@ -3187,7 +3356,6 @@ function equipItem(itemId, category) {
     updateAvatarDisplay();
     loadShopItems();
     saveGameState();
-    
     showNotification(`${itemId} equipped!`, 'success');
 }
 
@@ -3237,6 +3405,7 @@ function handlePetEquip(petId) {
         case 'croco_boy':
         case '3dm4rk':
         case 'entity':
+        case 'cosmic_god_pet':
             updatePetEffectDisplays();
             createPetThemeEffects();
             stopOtherPetEffects(petId);
@@ -3247,23 +3416,18 @@ function handlePetEquip(petId) {
             break;
     }
     
-    // Update pet effects
     updatePetEffects();
 }
 
 function stopOtherPetEffects(currentPetId) {
-    // Stop Lucky Cat interval
-    if (currentPetId !== 'lucky_cat' && gameState.luckyCatInterval) {
-        clearInterval(gameState.luckyCatInterval);
-        gameState.luckyCatInterval = null;
+    if (currentPetId !== 'lucky_cat') {
+        stopLuckyCatInterval();
     }
     
-    // Stop background music if not music dragon
     if (currentPetId !== 'music_dragon') {
         stopBackgroundMusic();
     }
     
-    // Stop Meowl music
     if (currentPetId !== 'meowl') {
         const meowlMusic = document.getElementById('meowl-music');
         if (meowlMusic) {
@@ -3272,23 +3436,19 @@ function stopOtherPetEffects(currentPetId) {
         }
     }
     
-    // Stop cosmic music if not a cosmic pet
-    if (!['cosming_dragon', '3dm4rk', 'entity'].includes(currentPetId)) {
+    if (!['cosming_dragon', '3dm4rk', 'entity', 'cosmic_god_pet'].includes(currentPetId)) {
         stopCosmicMusic();
     }
     
-    // Reset pet abilities for unequipped pets
     Object.keys(gameState.petAbilities).forEach(petId => {
         if (petId !== currentPetId) {
             if (gameState.petAbilities[petId]) {
-                // Reset common abilities
                 gameState.petAbilities[petId].extraAttemptsUsed = 0;
                 gameState.petAbilities[petId].healthRestored = false;
                 gameState.petAbilities[petId].resurrectionUsed = false;
                 gameState.petAbilities[petId].rewindUsed = false;
                 gameState.petAbilities[petId].rewindAvailable = true;
                 
-                // Reset cosmic pet specific abilities
                 if (gameState.petAbilities[petId].meditationActive !== undefined) {
                     gameState.petAbilities[petId].meditationActive = false;
                 }
@@ -3309,7 +3469,6 @@ function updateAvatarDisplay() {
     frameDisplay.style.border = frame.border;
     frameDisplay.style.background = frame.background || 'rgba(0, 0, 0, 0.3)';
     
-    // Update pet display
     const petDisplay = document.getElementById('avatar-pet-display');
     if (pet.id !== 'none') {
         petDisplay.innerHTML = `<i class="${pet.icon}"></i>`;
@@ -3321,6 +3480,138 @@ function updateAvatarDisplay() {
     }
     
     document.getElementById('player-name-display').textContent = gameState.playerName || 'Player';
+}
+
+// ====== PETS GALLERY - ENHANCED VERSION ======
+function showPetsGallery() {
+    const container = document.getElementById('pets-gallery-container');
+    container.innerHTML = '';
+    
+    // Sort pets by rarity for better display
+    const rarityOrder = {
+        'common': 1,
+        'rare': 2,
+        'epic': 3,
+        'legendary': 4,
+        'limited': 5,
+        'godtier': 6,
+        'cosmic': 7
+    };
+    
+    const sortedPets = [...shopItems.pets].sort((a, b) => {
+        const aOrder = rarityOrder[a.rarity] || 0;
+        const bOrder = rarityOrder[b.rarity] || 0;
+        if (aOrder !== bOrder) return bOrder - aOrder;
+        return a.name.localeCompare(b.name);
+    });
+    
+    sortedPets.forEach(pet => {
+        if (pet.id === 'none') return;
+        
+        const isOwned = gameState.purchasedItems.includes(pet.id) || 
+                       (pet.isRedeemOnly && gameState.redeemedCodes.includes(pet.id === 'lucky_cat' ? 'EDMARKISADMIN' : 'ILOVEMEOWL')) ||
+                       (pet.isCosmic && pet.price === 0 && gameState.purchasedItems.includes(pet.id));
+        const isEquipped = gameState.equippedPet === pet.id;
+        const isRedeemOnly = pet.isRedeemOnly || (pet.id === 'meowl' && !gameState.purchasedItems.includes('meowl'));
+        const isCosmicHidden = pet.isCosmic && pet.price === 0 && !gameState.purchasedItems.includes(pet.id);
+        
+        if (isCosmicHidden) return; // Don't show hidden cosmic pets
+        
+        const petElement = document.createElement('div');
+        petElement.className = `pet-gallery-item ${isOwned ? 'owned' : 'not-owned'} ${pet.rarity}`;
+        if (isEquipped) {
+            petElement.style.borderColor = '#4dabf7';
+            petElement.style.boxShadow = '0 0 10px #4dabf7';
+        }
+        
+        if (pet.godTier) {
+            petElement.classList.add('godtier');
+            petElement.style.animation = 'godTierGlow 2s infinite alternate';
+        }
+        
+        if (pet.isCosmic) {
+            petElement.classList.add('cosmic');
+            petElement.style.animation = 'cosmicPulse 3s infinite alternate';
+        }
+        
+        if (pet.rarity === 'limited') {
+            petElement.classList.add('limited');
+            if (pet.id === 'rainbow_phoenix') {
+                petElement.style.animation = 'rainbowPulse 3s infinite alternate';
+            }
+        }
+        
+        let acquisitionInfo = '';
+        if (isRedeemOnly) {
+            if (pet.id === 'lucky_cat') {
+                acquisitionInfo = gameState.redeemedCodes.includes('EDMARKISADMIN') ? 
+                    '<div class="pet-acquisition unlocked"><i class="fas fa-check-circle"></i> Redeem Code: EDMARKISADMIN</div>' :
+                    '<div class="pet-acquisition locked"><i class="fas fa-lock"></i> Redeem Code: EDMARKISADMIN</div>';
+            } else if (pet.id === 'meowl') {
+                acquisitionInfo = gameState.redeemedCodes.includes('ILOVEMEOWL') ? 
+                    '<div class="pet-acquisition unlocked"><i class="fas fa-check-circle"></i> Redeem Code: ILOVEMEOWL</div>' :
+                    '<div class="pet-acquisition locked"><i class="fas fa-lock"></i> Redeem Code: ILOVEMEOWL</div>';
+            }
+        } else if (pet.isCosmic && pet.price === 0) {
+            acquisitionInfo = '<div class="pet-acquisition cosmic"><i class="fas fa-star"></i> Cosmic Pet Draw</div>';
+        } else if (pet.priceInDiamonds) {
+            acquisitionInfo = `<div class="pet-acquisition diamond"><i class="fas fa-gem"></i> ${pet.price} Diamonds</div>`;
+        } else {
+            acquisitionInfo = `<div class="pet-acquisition gold"><i class="fas fa-coins"></i> ${pet.price} Gold</div>`;
+        }
+        
+        petElement.innerHTML = `
+            <div class="pet-gallery-header">
+                <div class="pet-gallery-icon" style="color:${pet.color}">
+                    <i class="${pet.icon}"></i>
+                </div>
+                <div class="pet-gallery-name">${pet.name}</div>
+                <div class="pet-gallery-rarity rarity-${pet.rarity}">
+                    ${pet.rarity.toUpperCase()}${pet.isCosmic ? ' COSMIC' : ''}${pet.godTier ? ' GOD TIER' : ''}
+                </div>
+            </div>
+            <div class="pet-gallery-body">
+                <div class="pet-gallery-effect">
+                    <strong>Abilities:</strong> ${pet.effect}
+                </div>
+                ${pet.bonusType && pet.bonusType !== 'none' ? `
+                <div class="pet-gallery-stats">
+                    <div class="pet-stat">
+                        <span class="stat-label">Type:</span>
+                        <span class="stat-value">${pet.bonusType}</span>
+                    </div>
+                    ${pet.bonusAmount > 0 ? `
+                    <div class="pet-stat">
+                        <span class="stat-label">Bonus:</span>
+                        <span class="stat-value">${pet.bonusAmount}</span>
+                    </div>
+                    ` : ''}
+                    ${pet.bonusCondition > 0 ? `
+                    <div class="pet-stat">
+                        <span class="stat-label">Condition:</span>
+                        <span class="stat-value">Every ${pet.bonusCondition} streaks</span>
+                    </div>
+                    ` : ''}
+                </div>
+                ` : ''}
+                ${acquisitionInfo}
+            </div>
+            <div class="pet-gallery-footer">
+                ${isOwned ? 
+                    `<div class="pet-gallery-status owned">
+                        <i class="fas fa-check"></i> ${isEquipped ? 'EQUIPPED' : 'OWNED'}
+                    </div>` : 
+                    `<div class="pet-gallery-status not-owned">
+                        <i class="fas fa-times"></i> NOT OWNED
+                    </div>`
+                }
+            </div>
+        `;
+        
+        container.appendChild(petElement);
+    });
+    
+    document.getElementById('pets-gallery-modal').style.display = 'flex';
 }
 
 // ====== THEME SYSTEM ======
@@ -3365,28 +3656,24 @@ function buyTheme(themeId) {
 }
 
 function applyTheme(themeId) {
-    // Remove all theme classes except pet themes
     document.body.classList.remove('theme-earth', 'theme-sea', 'theme-sky', 'theme-space', 'theme-luckycat', 'theme-cosmic');
     
-    // Add new theme class
     if (themeId !== 'default') {
         document.body.classList.add(`theme-${themeId}`);
         gameState.activeTheme = themeId;
         
-        // Create theme effects (but don't override pet effects)
         if (!gameState.equippedPet || 
-            !['meowl', 'rainbow_phoenix', 'time_travel_turtle', 'cosming_dragon', 'elder_god_butterfly', 'diamond_centipede', 'humanoid_gold_seeker', 'carlito_cocofanto', 'tungtung_sahur', 'crazy_dog', 'croco_boy', '3dm4rk', 'entity'].includes(gameState.equippedPet)) {
+            !['meowl', 'rainbow_phoenix', 'time_travel_turtle', 'cosming_dragon', 'elder_god_butterfly', 'diamond_centipede', 'humanoid_gold_seeker', 'carlito_cocofanto', 'tungtung_sahur', 'crazy_dog', 'croco_boy', '3dm4rk', 'entity', 'cosmic_god_pet'].includes(gameState.equippedPet)) {
             createThemeEffects(themeId);
         }
     } else {
         gameState.activeTheme = 'default';
         if (!gameState.equippedPet || 
-            !['meowl', 'rainbow_phoenix', 'time_travel_turtle', 'cosming_dragon', 'elder_god_butterfly', 'diamond_centipede', 'humanoid_gold_seeker', 'carlito_cocofanto', 'tungtung_sahur', 'crazy_dog', 'croco_boy', '3dm4rk', 'entity'].includes(gameState.equippedPet)) {
+            !['meowl', 'rainbow_phoenix', 'time_travel_turtle', 'cosming_dragon', 'elder_god_butterfly', 'diamond_centipede', 'humanoid_gold_seeker', 'carlito_cocofanto', 'tungtung_sahur', 'crazy_dog', 'croco_boy', '3dm4rk', 'entity', 'cosmic_god_pet'].includes(gameState.equippedPet)) {
             clearThemeEffects();
         }
     }
     
-    // If Lucky Cat is equipped, ensure its theme is also applied
     if (gameState.equippedPet === 'lucky_cat' && themeId !== 'luckycat') {
         document.body.classList.add('theme-luckycat');
         createLuckyCatEffects();
@@ -3399,20 +3686,16 @@ function createThemeEffects(themeId) {
     const effectsContainer = document.getElementById('theme-effects');
     effectsContainer.innerHTML = '';
     
-    // Create main effect
     const effect = document.createElement('div');
     effect.className = `theme-effect ${themeId}-effect`;
     effectsContainer.appendChild(effect);
     
-    // Create particles for space theme
     if (themeId === 'space') {
         createSpaceParticles();
     }
-    // Create particles for Lucky Cat theme
     if (themeId === 'luckycat' || gameState.equippedPet === 'lucky_cat') {
         createCatParticles();
     }
-    // Create particles for cosmic theme
     if (themeId === 'cosmic') {
         createCosmicEffects();
     }
@@ -3421,41 +3704,6 @@ function createThemeEffects(themeId) {
 function clearThemeEffects() {
     const effectsContainer = document.getElementById('theme-effects');
     effectsContainer.innerHTML = '';
-}
-
-function createSpaceParticles() {
-    const effectsContainer = document.getElementById('theme-effects');
-    
-    for (let i = 0; i < 50; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'theme-particle';
-        particle.style.width = `${Math.random() * 4 + 1}px`;
-        particle.style.height = particle.style.width;
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.top = `${Math.random() * 100}%`;
-        particle.style.background = `hsl(${Math.random() * 360}, 100%, 70%)`;
-        particle.style.boxShadow = `0 0 ${Math.random() * 10 + 5}px currentColor`;
-        particle.style.animation = `float ${Math.random() * 20 + 10}s infinite linear`;
-        particle.style.animationDelay = `${Math.random() * 5}s`;
-        effectsContainer.appendChild(particle);
-    }
-}
-
-function createCatParticles() {
-    const effectsContainer = document.getElementById('theme-effects');
-    
-    for (let i = 0; i < 20; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'theme-particle';
-        particle.innerHTML = '<i class="fas fa-paw" style="font-size: 0.8rem;"></i>';
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.top = `${Math.random() * 100}%`;
-        particle.style.color = '#ff6b9d';
-        particle.style.opacity = '0.7';
-        particle.style.animation = `float ${Math.random() * 10 + 10}s infinite linear`;
-        particle.style.animationDelay = `${Math.random() * 5}s`;
-        effectsContainer.appendChild(particle);
-    }
 }
 
 // ====== MYSTERY BOX SYSTEM ======
@@ -3472,10 +3720,7 @@ function buyMysteryBox(type) {
         gameState.gold -= price;
         gameState.mysteryBoxesOpened++;
         
-        // Get random rewards
         const rewards = getMysteryBoxRewards(type);
-        
-        // Show mystery box modal
         showMysteryBoxModal(rewards, type);
         
         updateDisplays();
@@ -3495,17 +3740,15 @@ function getMysteryBoxRewards(type) {
     const rewardPool = mysteryBoxRewards[type];
     const rewards = [];
     
-    // Get 1-3 random rewards
     const numRewards = Math.floor(Math.random() * 3) + 1;
     
     for (let i = 0; i < numRewards; i++) {
-        // For cosmic box, use chance-based selection
         if (type === 'cosmic') {
             const random = Math.random();
             let cumulativeChance = 0;
             
             for (const reward of rewardPool) {
-                cumulativeChance += reward.chance || 0.2; // Default 20% chance if not specified
+                cumulativeChance += reward.chance || 0.2;
                 if (random <= cumulativeChance) {
                     rewards.push({...reward});
                     break;
@@ -3550,7 +3793,6 @@ function showMysteryBoxModal(rewards, boxType) {
                 description = `+${reward.amount} Extra Life`;
                 break;
             case 'hint':
-                // Add free hints
                 description = `${reward.amount} Free Hints`;
                 break;
             case 'streak':
@@ -3568,7 +3810,6 @@ function showMysteryBoxModal(rewards, boxType) {
                     gameState.totalPets++;
                     description = `${reward.name} Unlocked!`;
                 } else {
-                    // If already owned, give gold instead
                     totalGold += 200;
                     description = `Pet Already Owned (Converted to 200 gold)`;
                 }
@@ -3606,7 +3847,6 @@ function showMysteryBoxModal(rewards, boxType) {
         container.appendChild(rewardItem);
     });
     
-    // Apply bulk rewards
     if (totalGold > 0) {
         gameState.gold += totalGold;
         gameState.totalGoldEarned += totalGold;
@@ -3616,11 +3856,8 @@ function showMysteryBoxModal(rewards, boxType) {
         updateLivesDisplay();
     }
     
-    // Update displays
     updateDisplays();
     updatePowerUpButtons();
-    
-    // Show the modal
     document.getElementById('mystery-modal').style.display = 'flex';
 }
 
@@ -3690,14 +3927,12 @@ function updatePowerUpButtons() {
     
     if (!hintBtn || !lifeBtn || !tagnaBtn || !goldrushBtn) return;
     
-    // Update hint button - FIXED: Don't deduct gold if unlimited hints
     if (gameState.permanentPowerUps.unlimitedHints) {
         hintBtn.disabled = !gameState.gameActive;
     } else {
         hintBtn.disabled = gameState.gold < 2 || gameState.activePowerUps.hintUsed || !gameState.gameActive;
     }
     
-    // Update other buttons
     lifeBtn.disabled = gameState.gold < 50 || gameState.lives >= gameState.maxLives || !gameState.gameActive;
     tagnaBtn.disabled = gameState.gold < 15 || gameState.activePowerUps.tagnaUsed || !gameState.gameActive;
     goldrushBtn.disabled = gameState.gold < 100 || gameState.activePowerUps.goldrush || !gameState.gameActive;
@@ -3713,9 +3948,7 @@ function usePowerUp(type) {
     
     const cost = costs[type];
     
-    // FIXED: Don't deduct gold for hint if unlimited hints is purchased
     if (type === 'hint' && gameState.permanentPowerUps.unlimitedHints) {
-        // Use hint without deducting gold
         useHintPowerUp();
         return;
     }
@@ -3762,7 +3995,6 @@ function usePowerUp(type) {
 }
 
 function useHintPowerUp() {
-    // Reveal one wrong option
     const wrongOptions = Array.from({length: gameState.optionsCount}, (_, i) => i)
         .filter(i => i !== gameState.goldPosition && !gameState.revealedOptions.includes(i));
     
@@ -3777,54 +4009,38 @@ function useHintPowerUp() {
 }
 
 function useTagnaPowerUp() {
-    // NEW IMPROVED Tagna: Remove all but 2 options (including the gold)
-    // This gives you a 50/50 chance to find the gold!
-    
-    // First, find all unrevealed options
     const allOptions = Array.from({length: gameState.optionsCount}, (_, i) => i);
     const unrevealedOptions = allOptions.filter(i => !gameState.revealedOptions.includes(i));
     
-    // We need to keep exactly 2 options: the gold and one wrong option
     const optionsToKeep = [gameState.goldPosition];
     
-    // Add one random wrong option to keep
     const wrongOptions = unrevealedOptions.filter(i => i !== gameState.goldPosition);
     if (wrongOptions.length > 0) {
         const randomWrong = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
         optionsToKeep.push(randomWrong);
     } else {
-        // If no wrong options, just keep the gold
-        // Add any other option
         const otherOptions = allOptions.filter(i => i !== gameState.goldPosition);
         if (otherOptions.length > 0) {
             optionsToKeep.push(otherOptions[0]);
         }
     }
     
-    // Mark all other options as eliminated
     const optionsToEliminate = allOptions.filter(i => !optionsToKeep.includes(i));
     
-    // Play Tagna sound
     playSound('tagna');
-    
-    // Animate elimination of options
     animateTagnaElimination(optionsToEliminate, optionsToKeep);
     
     showNotification('Tagna activated! Eliminating options...', 'info');
 }
 
 function animateTagnaElimination(optionsToEliminate, optionsToKeep) {
-    // Get all option elements
     const optionElements = document.querySelectorAll('.option');
     
-    // Add eliminating animation to options to eliminate
     optionsToEliminate.forEach(index => {
         const optionElement = optionElements[index];
         if (optionElement) {
-            // Add animation class
             optionElement.classList.add('tagna-eliminating');
             
-            // After animation completes, mark as eliminated
             setTimeout(() => {
                 optionElement.classList.remove('tagna-eliminating');
                 optionElement.classList.add('eliminated');
@@ -3832,7 +4048,6 @@ function animateTagnaElimination(optionsToEliminate, optionsToKeep) {
                 optionElement.style.pointerEvents = 'none';
                 optionElement.style.cursor = 'not-allowed';
                 
-                // Add to revealed options
                 if (!gameState.revealedOptions.includes(index)) {
                     gameState.revealedOptions.push(index);
                 }
@@ -3840,15 +4055,12 @@ function animateTagnaElimination(optionsToEliminate, optionsToKeep) {
         }
     });
     
-    // Highlight the remaining options
     setTimeout(() => {
         optionsToKeep.forEach(index => {
             const optionElement = optionElements[index];
             if (optionElement) {
-                // Add pulse animation to remaining options
                 optionElement.classList.add('pulse');
                 
-                // If it's the gold, show special effect
                 if (index === gameState.goldPosition) {
                     optionElement.style.boxShadow = '0 0 20px #51cf66';
                 } else {
@@ -3857,67 +4069,10 @@ function animateTagnaElimination(optionsToEliminate, optionsToKeep) {
             }
         });
         
-        // Show message
         const instruction = document.getElementById('instruction');
         instruction.innerHTML = `<span style="color:#cc5de8">Tagna activated! Only 2 options remain. 50/50 chance to find the gold!</span>`;
-        
-        // Update power-up button
         updatePowerUpButtons();
-        
     }, 600);
-}
-
-// ====== PETS GALLERY ======
-function showPetsGallery() {
-    const container = document.getElementById('pets-gallery-container');
-    container.innerHTML = '';
-    
-    // Add all pets to gallery
-    shopItems.pets.forEach(pet => {
-        // Skip "none" pet
-        if (pet.id === 'none') return;
-        
-        // Skip cosmic pets that aren't owned and are draw-only
-        if (pet.isCosmic && pet.price === 0 && !gameState.purchasedItems.includes(pet.id)) {
-            return;
-        }
-        
-        const isOwned = gameState.purchasedItems.includes(pet.id);
-        const isEquipped = gameState.equippedPet === pet.id;
-        
-        const petElement = document.createElement('div');
-        petElement.className = `pet-gallery-item ${isOwned ? 'owned' : 'not-owned'}`;
-        if (isEquipped) {
-            petElement.style.borderColor = '#4dabf7';
-            petElement.style.boxShadow = '0 0 10px #4dabf7';
-        }
-        
-        petElement.innerHTML = `
-            <div class="pet-gallery-icon" style="color:${pet.color}">
-                <i class="${pet.icon}"></i>
-            </div>
-            <div class="pet-gallery-name">${pet.name}</div>
-            <div class="pet-gallery-rarity rarity-${pet.rarity}">
-                ${pet.rarity.toUpperCase()}${pet.isCosmic ? ' COSMIC' : ''}
-            </div>
-            <div style="font-size:0.7rem; color:#aaa; text-align:center;">
-                ${pet.effect}
-            </div>
-            ${isOwned ? 
-                `<div style="font-size:0.7rem; color:#51cf66; margin-top:5px;">
-                    <i class="fas fa-check"></i> Owned${isEquipped ? ' & Equipped' : ''}
-                </div>` : 
-                `<div style="font-size:0.7rem; color:#ff6b6b; margin-top:5px;">
-                    <i class="fas fa-times"></i> Not Owned
-                </div>`
-            }
-        `;
-        
-        container.appendChild(petElement);
-    });
-    
-    // Show the modal
-    document.getElementById('pets-gallery-modal').style.display = 'flex';
 }
 
 // ====== STATS SYSTEM ======
@@ -3942,7 +4097,6 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     notification.textContent = message;
     
-    // Set color based on type
     switch(type) {
         case 'success':
             notification.style.borderLeftColor = '#51cf66';
@@ -3960,7 +4114,6 @@ function showNotification(message, type = 'info') {
     
     notification.style.display = 'block';
     
-    // Auto-hide after 3 seconds
     setTimeout(() => {
         notification.style.display = 'none';
     }, 3000);
@@ -4006,10 +4159,8 @@ function updateMusicControls() {
     
     if (!musicToggle || !musicSlider || !musicControls) return;
     
-    // Update slider value
     musicSlider.value = gameState.musicVolume * 100;
     
-    // Update toggle button state
     const musicIcon = musicToggle.querySelector('i');
     if (gameState.musicEnabled) {
         musicIcon.className = 'fas fa-volume-up';
@@ -4019,7 +4170,6 @@ function updateMusicControls() {
         musicToggle.classList.remove('music-playing');
     }
     
-    // Apply volume to all music
     const bgMusic = document.getElementById('background-music');
     if (bgMusic) {
         bgMusic.volume = gameState.musicVolume;
@@ -4035,7 +4185,6 @@ function updateMusicControls() {
         cosmicMusic.volume = gameState.musicVolume * 0.7;
     }
     
-    // Show/hide music controls based on pet
     if (gameState.equippedPet === 'music_dragon') {
         musicControls.style.display = 'flex';
     } else {
@@ -4044,13 +4193,10 @@ function updateMusicControls() {
 }
 
 function setupEventListeners() {
-    // Welcome system
     setupWelcomeSystem();
-    
-    // Redeem system
     setupRedeemSystem();
+    setupMobileMenu();
     
-    // Game controls
     document.getElementById('start-btn').addEventListener('click', startGame);
     document.getElementById('next-btn').addEventListener('click', () => {
         gameState.isSelecting = false;
@@ -4064,31 +4210,31 @@ function setupEventListeners() {
     document.getElementById('stats-btn').addEventListener('click', showStatsModal);
     document.getElementById('gallery-btn').addEventListener('click', showPetsGallery);
     
-    // Timer modal close
+    // RPS Button
+    const rpsBtn = document.getElementById('rps-btn');
+    if (rpsBtn) {
+        rpsBtn.addEventListener('click', startBossBattleChallenge);
+    }
+    
     document.getElementById('close-timer-btn').addEventListener('click', function() {
         document.getElementById('timer-modal').style.display = 'none';
         initGame();
     });
     
-    // Pets gallery close
     document.getElementById('close-gallery-btn').addEventListener('click', function() {
         document.getElementById('pets-gallery-modal').style.display = 'none';
     });
     
-    // Shop tabs
     const shopTabs = document.querySelectorAll('.shop-tab');
     shopTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const tabId = this.dataset.tab;
             
-            // Play button sound
             playSound('click');
             
-            // Update active tab
             shopTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
             
-            // Show corresponding content
             document.querySelectorAll('.shop-tab-content').forEach(content => {
                 content.classList.remove('active');
             });
@@ -4096,7 +4242,6 @@ function setupEventListeners() {
         });
     });
     
-    // Modal close buttons
     document.getElementById('close-reward-btn').addEventListener('click', function() {
         document.getElementById('reward-modal').style.display = 'none';
         gameState.isSelecting = false;
@@ -4105,14 +4250,13 @@ function setupEventListeners() {
     
     document.getElementById('close-mystery-btn').addEventListener('click', function() {
         document.getElementById('mystery-modal').style.display = 'none';
-        loadShopItems(); // Refresh shop to show new items
+        loadShopItems();
     });
     
     document.getElementById('close-stats-btn').addEventListener('click', function() {
         document.getElementById('stats-modal').style.display = 'none';
     });
     
-    // Sound controls
     document.getElementById('sound-toggle').addEventListener('click', function() {
         soundEnabled = toggleSound();
         updateSoundButton();
@@ -4120,7 +4264,6 @@ function setupEventListeners() {
         showNotification(`Sound ${soundEnabled ? 'enabled' : 'disabled'}`, 'info');
     });
     
-    // Music controls
     document.getElementById('music-toggle').addEventListener('click', function() {
         gameState.musicEnabled = !gameState.musicEnabled;
         
@@ -4130,13 +4273,11 @@ function setupEventListeners() {
                     startBackgroundMusic();
                 }
             } else if (gameState.equippedPet === 'meowl') {
-                // Meowl has its own music
                 const meowlMusic = document.getElementById('meowl-music');
                 if (meowlMusic && gameState.gameActive) {
                     meowlMusic.play().catch(e => console.log("Meowl music play failed:", e));
                 }
-            } else if (['cosming_dragon', '3dm4rk', 'entity'].includes(gameState.equippedPet)) {
-                // Cosmic pets have cosmic music
+            } else if (['cosming_dragon', '3dm4rk', 'entity', 'cosmic_god_pet'].includes(gameState.equippedPet)) {
                 const cosmicMusic = document.getElementById('cosmic-music');
                 if (cosmicMusic && gameState.gameActive) {
                     cosmicMusic.play().catch(e => console.log("Cosmic music play failed:", e));
@@ -4158,7 +4299,6 @@ function setupEventListeners() {
     document.getElementById('music-volume').addEventListener('input', function() {
         gameState.musicVolume = this.value / 100;
         
-        // Update all music volumes
         const bgMusic = document.getElementById('background-music');
         if (bgMusic) {
             bgMusic.volume = gameState.musicVolume;
@@ -4177,19 +4317,16 @@ function setupEventListeners() {
         saveGameState();
     });
     
-    // Close modals when clicking outside
-    const modals = ['reward-modal', 'game-over', 'mystery-modal', 'stats-modal', 'welcome-modal', 'redeem-modal', 'god-tier-modal', 'cosmic-draw-modal', 'pets-gallery-modal', 'timer-modal'];
+    const modals = ['reward-modal', 'game-over', 'mystery-modal', 'stats-modal', 'welcome-modal', 'redeem-modal', 'god-tier-modal', 'cosmic-draw-modal', 'pets-gallery-modal', 'timer-modal', 'help-modal'];
     modals.forEach(modalId => {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
                     this.style.display = 'none';
-                    // Clear redeem input if closing redeem modal
                     if (modalId === 'redeem-modal') {
                         document.getElementById('redeem-code-input').value = '';
                     }
-                    // Refresh shop if closing god tier or cosmic modal
                     if (modalId === 'god-tier-modal' || modalId === 'cosmic-draw-modal') {
                         loadShopItems();
                     }
@@ -4198,8 +4335,7 @@ function setupEventListeners() {
         }
     });
     
-    // Add click sounds to buttons
-    const buttons = document.querySelectorAll('button:not(.sound-btn):not(.music-btn)');
+    const buttons = document.querySelectorAll('button:not(.sound-btn):not(.music-btn):not(.mobile-menu-btn):not(.mobile-menu-close):not(.mobile-menu-item)');
     buttons.forEach(button => {
         button.addEventListener('click', () => {
             playSound('click');
@@ -4216,10 +4352,8 @@ function updatePetEffects() {
 
 function applyMusicDragonEffects() {
     if (gameState.equippedPet === 'music_dragon') {
-        // Show music controls
         document.getElementById('music-controls').style.display = 'flex';
         
-        // Add visual effect for Music Dragon
         let dragonEffect = document.getElementById('dragon-effect');
         if (!dragonEffect) {
             dragonEffect = document.createElement('div');
@@ -4236,7 +4370,6 @@ function applyMusicDragonEffects() {
             document.body.appendChild(dragonEffect);
         }
     } else {
-        // Remove dragon effect if not equipped
         const dragonEffect = document.getElementById('dragon-effect');
         if (dragonEffect) {
             dragonEffect.remove();
@@ -4244,73 +4377,33 @@ function applyMusicDragonEffects() {
     }
 }
 
-// ====== GOLD MULTIPLIERS FROM PETS ======
-function calculateGoldMultiplier() {
-    let multiplier = 1;
-    
-    // Apply theme bonus
-    if (gameState.activeTheme !== 'default') {
-        multiplier *= gameState.themeBonuses[gameState.activeTheme];
-    }
-    
-    // Apply pet bonuses
-    if (gameState.equippedPet !== 'none') {
-        const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
-        
-        if (pet) {
-            switch(pet.id) {
-                case 'rainbow_phoenix':
-                    multiplier *= 1.25; // 25% gold bonus
-                    break;
-                case 'time_travel_turtle':
-                    multiplier *= 1.30; // 30% gold bonus
-                    break;
-                case 'cosmic':
-                case 'entity':
-                    multiplier *= 1.50; // 50% gold bonus
-                    break;
-                // Other pets can add specific multipliers here
-            }
-        }
-    }
-    
-    return multiplier;
-}
-
 // ====== ACHIEVEMENT SYSTEM ======
 function checkAchievements() {
     const achievements = [];
     
-    // Gold milestones
     if (gameState.gold >= 1000) achievements.push('Thousandaire: Reach 1,000 gold');
     if (gameState.gold >= 10000) achievements.push('Ten Thousandaire: Reach 10,000 gold');
     if (gameState.gold >= 100000) achievements.push('Hundred Thousandaire: Reach 100,000 gold');
     if (gameState.gold >= 1000000) achievements.push('Millionaire: Reach 1,000,000 gold');
     
-    // Diamond milestones
     if (gameState.diamonds >= 10) achievements.push('Diamond Collector: Collect 10 diamonds');
     if (gameState.diamonds >= 100) achievements.push('Diamond Hoarder: Collect 100 diamonds');
     
-    // Streak achievements
     if (gameState.highestStreak >= 10) achievements.push('Hot Streak: Achieve a 10+ streak');
     if (gameState.highestStreak >= 50) achievements.push('Unstoppable: Achieve a 50+ streak');
     if (gameState.highestStreak >= 100) achievements.push('Legendary Streak: Achieve a 100+ streak');
     
-    // Level achievements
     if (gameState.level >= 50) achievements.push('Halfway There: Reach level 50');
     if (gameState.level >= 100) achievements.push('Centurion: Reach level 100');
     if (gameState.level >= 500) achievements.push('Master Explorer: Reach level 500');
     
-    // Pet achievements
     if (gameState.totalPets >= 5) achievements.push('Pet Collector: Own 5 pets');
     if (gameState.totalPets >= 10) achievements.push('Pet Master: Own 10 pets');
     if (gameState.totalPets >= 15) achievements.push('Pet Legend: Own 15 pets');
     
-    // Mystery box achievements
     if (gameState.mysteryBoxesOpened >= 10) achievements.push('Mystery Enthusiast: Open 10 mystery boxes');
     if (gameState.mysteryBoxesOpened >= 50) achievements.push('Mystery Master: Open 50 mystery boxes');
     
-    // Cosmic pet achievement
     const cosmicPetsOwned = cosmicPets.filter(petId => 
         gameState.purchasedItems.includes(petId)
     ).length;
@@ -4323,11 +4416,9 @@ function checkAchievements() {
 
 // ====== AUTO-SAVE SYSTEM ======
 function startAutoSave() {
-    // Auto-save every 30 seconds
     setInterval(() => {
         if (gameState.gameActive) {
             saveGameState();
-            console.log("Game auto-saved");
         }
     }, 30000);
 }
@@ -4355,7 +4446,8 @@ function exportGameData() {
         totalPets: gameState.totalPets,
         mysteryBoxesOpened: gameState.mysteryBoxesOpened,
         cosmicDrawUsed: gameState.cosmicDrawUsed,
-        megaLevelExtension: gameState.megaLevelExtension
+        megaLevelExtension: gameState.megaLevelExtension,
+        rockPaperScissorsUnlocked: gameState.rockPaperScissorsUnlocked
     };
     
     const dataStr = JSON.stringify(gameData, null, 2);
@@ -4384,24 +4476,20 @@ function importGameData() {
             try {
                 const importedData = JSON.parse(event.target.result);
                 
-                // Validate imported data
                 if (!importedData.playerName || !importedData.gold) {
                     throw new Error('Invalid save file');
                 }
                 
-                // Update game state with imported data
                 Object.keys(importedData).forEach(key => {
                     if (gameState[key] !== undefined) {
                         gameState[key] = importedData[key];
                     }
                 });
                 
-                // Update global soundEnabled flag
                 if (importedData.soundEnabled !== undefined) {
                     soundEnabled = importedData.soundEnabled;
                 }
                 
-                // Update displays
                 initGame();
                 loadShopItems();
                 applyTheme(gameState.activeTheme);
@@ -4420,10 +4508,16 @@ function importGameData() {
     input.click();
 }
 
+function resetGame() {
+    if (confirm('Are you sure you want to reset the game? This will delete all your progress!')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
 // ====== KEYBOARD SHORTCUTS ======
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function(e) {
-        // Don't trigger shortcuts if user is typing in an input field
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
             return;
         }
@@ -4431,13 +4525,10 @@ function setupKeyboardShortcuts() {
         switch(e.key.toLowerCase()) {
             case ' ':
             case 'enter':
-                // Space or Enter to start/next
                 if (!gameState.gameActive) {
                     document.getElementById('start-btn').click();
                 } else if (gameState.isSelecting) {
-                    // Can't skip selection
                 } else {
-                    // If next button is visible, click it
                     const nextBtn = document.getElementById('next-btn');
                     if (nextBtn && nextBtn.style.display !== 'none') {
                         nextBtn.click();
@@ -4455,7 +4546,6 @@ function setupKeyboardShortcuts() {
             case '8':
             case '9':
             case '0':
-                // Number keys to select options (1-0 for options 1-10)
                 const num = parseInt(e.key === '0' ? 10 : e.key) - 1;
                 if (gameState.gameActive && 
                     !gameState.isSelecting && 
@@ -4470,7 +4560,6 @@ function setupKeyboardShortcuts() {
                 break;
                 
             case 'h':
-                // H for hint
                 const hintBtn = document.getElementById('hint-btn');
                 if (hintBtn && !hintBtn.disabled) {
                     hintBtn.click();
@@ -4478,7 +4567,6 @@ function setupKeyboardShortcuts() {
                 break;
                 
             case 't':
-                // T for Tagna
                 const tagnaBtn = document.getElementById('tagna-btn');
                 if (tagnaBtn && !tagnaBtn.disabled) {
                     tagnaBtn.click();
@@ -4486,7 +4574,6 @@ function setupKeyboardShortcuts() {
                 break;
                 
             case 'g':
-                // G for Gold Rush
                 const goldrushBtn = document.getElementById('goldrush-btn');
                 if (goldrushBtn && !goldrushBtn.disabled) {
                     goldrushBtn.click();
@@ -4494,7 +4581,6 @@ function setupKeyboardShortcuts() {
                 break;
                 
             case 'l':
-                // L for extra life
                 const lifeBtn = document.getElementById('life-btn');
                 if (lifeBtn && !lifeBtn.disabled) {
                     lifeBtn.click();
@@ -4502,38 +4588,37 @@ function setupKeyboardShortcuts() {
                 break;
                 
             case 'r':
-                // R for redeem
                 document.getElementById('redeem-btn').click();
                 break;
                 
             case 's':
-                // S for shop
                 document.getElementById('shop-btn').click();
                 break;
                 
             case 'm':
-                // M for stats
                 document.getElementById('stats-btn').click();
                 break;
                 
             case 'p':
-                // P for pets gallery
                 document.getElementById('gallery-btn').click();
                 break;
                 
+            case 'b':
+                if (gameState.rockPaperScissorsUnlocked) {
+                    startBossBattleChallenge();
+                }
+                break;
+                
             case 'escape':
-                // Escape to close modals
-                const openModals = document.querySelectorAll('.welcome-modal, .reward-modal, .game-over, .mystery-modal, .stats-modal, .redeem-modal, .god-tier-modal, .cosmic-draw-modal, .pets-gallery-modal, .timer-modal');
+                const openModals = document.querySelectorAll('.welcome-modal, .reward-modal, .game-over, .mystery-modal, .stats-modal, .redeem-modal, .god-tier-modal, .cosmic-draw-modal, .pets-gallery-modal, .timer-modal, .help-modal');
                 for (const modal of openModals) {
                     if (modal.style.display === 'flex') {
                         modal.style.display = 'none';
                         
-                        // Clear redeem input if closing redeem modal
                         if (modal.id === 'redeem-modal') {
                             document.getElementById('redeem-code-input').value = '';
                         }
                         
-                        // Refresh shop if closing god tier or cosmic modal
                         if (modal.id === 'god-tier-modal' || modal.id === 'cosmic-draw-modal') {
                             loadShopItems();
                         }
@@ -4546,111 +4631,13 @@ function setupKeyboardShortcuts() {
     });
 }
 
-// ====== TOOLTIPS ======
-function setupTooltips() {
-    // Add tooltips to all buttons and interactive elements
-    const tooltipElements = document.querySelectorAll('[title], .option, .shop-item, .power-up-item, .btn, .shop-tab');
-    
-    tooltipElements.forEach(element => {
-        element.addEventListener('mouseenter', function(e) {
-            // Show custom tooltip
-            const tooltip = document.createElement('div');
-            tooltip.className = 'custom-tooltip';
-            tooltip.textContent = this.title || this.dataset.tooltip || '';
-            
-            if (tooltip.textContent) {
-                document.body.appendChild(tooltip);
-                
-                const rect = this.getBoundingClientRect();
-                tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
-                tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
-                
-                // Remove tooltip after 3 seconds
-                setTimeout(() => {
-                    if (tooltip.parentNode) {
-                        tooltip.parentNode.removeChild(tooltip);
-                    }
-                }, 3000);
-            }
-        });
-        
-        element.addEventListener('mouseleave', function() {
-            const tooltip = document.querySelector('.custom-tooltip');
-            if (tooltip) {
-                tooltip.remove();
-            }
-        });
-    });
-}
-
-// Add custom tooltip CSS
-const tooltipCSS = `
-.custom-tooltip {
-    position: fixed;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    z-index: 10000;
-    pointer-events: none;
-    animation: fadeIn 0.2s ease;
-    border: 1px solid var(--theme-primary);
-    max-width: 300px;
-    text-align: center;
-}
-`;
-
-const styleSheet = document.createElement("style");
-styleSheet.type = "text/css";
-styleSheet.innerText = tooltipCSS;
-document.head.appendChild(styleSheet);
-
-// ====== SESSION STATS ======
-function getSessionStats() {
-    const sessionStartTime = localStorage.getItem('gtgSessionStartTime');
-    const now = Date.now();
-    
-    if (!sessionStartTime) {
-        localStorage.setItem('gtgSessionStartTime', now);
-        return {
-            sessionDuration: 0,
-            goldEarned: 0,
-            levelsCompleted: 0,
-            correctGuesses: 0
-        };
-    }
-    
-    const sessionDuration = Math.floor((now - parseInt(sessionStartTime)) / 1000); // in seconds
-    
-    // Get session stats from saved state
-    const sessionStats = {
-        sessionDuration: sessionDuration,
-        goldEarned: gameState.totalGoldEarned - (parseInt(localStorage.getItem('gtgSessionStartGold')) || 0),
-        levelsCompleted: gameState.level - (parseInt(localStorage.getItem('gtgSessionStartLevel')) || 0),
-        correctGuesses: gameState.totalCorrect - (parseInt(localStorage.getItem('gtgSessionStartCorrect')) || 0)
-    };
-    
-    return sessionStats;
-}
-
-function updateSessionStats() {
-    if (!localStorage.getItem('gtgSessionStartTime')) {
-        localStorage.setItem('gtgSessionStartTime', Date.now());
-        localStorage.setItem('gtgSessionStartGold', gameState.totalGoldEarned);
-        localStorage.setItem('gtgSessionStartLevel', gameState.level);
-        localStorage.setItem('gtgSessionStartCorrect', gameState.totalCorrect);
-    }
-}
-
 // ====== DAILY REWARDS ======
 function checkDailyReward() {
     const lastRewardDate = localStorage.getItem('gtgLastRewardDate');
     const today = new Date().toDateString();
     
     if (lastRewardDate !== today) {
-        // Give daily reward
-        const rewardAmount = 100 + Math.floor(Math.random() * 400); // 100-500 gold
+        const rewardAmount = 100 + Math.floor(Math.random() * 400);
         gameState.gold += rewardAmount;
         gameState.totalGoldEarned += rewardAmount;
         
@@ -4668,11 +4655,9 @@ function checkDailyReward() {
 
 // ====== PERFORMANCE OPTIMIZATIONS ======
 function optimizePerformance() {
-    // Limit particle effects based on performance
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // Reduce effects on mobile
         const particles = document.querySelectorAll('.theme-particle, .rainbow-particle, .time-particle, .cosmic-particle');
         if (particles.length > 20) {
             for (let i = 20; i < particles.length; i++) {
@@ -4680,95 +4665,776 @@ function optimizePerformance() {
             }
         }
     }
-    
-    // Use requestAnimationFrame for smoother animations
-    let lastTime = 0;
-    function animate(time) {
-        const deltaTime = time - lastTime;
-        lastTime = time;
-        
-        // Update any time-based animations here if needed
-        
-        requestAnimationFrame(animate);
-    }
-    
-    requestAnimationFrame(animate);
 }
 
 // ====== ERROR HANDLING ======
 function setupErrorHandling() {
-    // Global error handler
     window.addEventListener('error', function(e) {
         console.error('Game error:', e.error);
         showNotification('An error occurred. Game state saved.', 'error');
         saveGameState();
     });
     
-    // Unhandled promise rejection handler
     window.addEventListener('unhandledrejection', function(e) {
         console.error('Unhandled promise rejection:', e.reason);
         showNotification('A game error occurred. Please refresh.', 'error');
     });
 }
 
-// ====== INITIALIZE ALL SYSTEMS ======
+
+
+// ====== ROCK PAPER SCISSORS BOSS BATTLE FUNCTIONS ======
+function unlockRockPaperScissors() {
+    if (gameState.gold >= gameState.rockPaperScissorsExtensionPrice && !gameState.rockPaperScissorsUnlocked) {
+        gameState.gold -= gameState.rockPaperScissorsExtensionPrice;
+        gameState.rockPaperScissorsUnlocked = true;
+        gameState.purchasedItems.push('rock_paper_scissors');
+        
+        updateDisplays();
+        saveGameState();
+        
+        showNotification('Rock Paper Scissors Battle unlocked!', 'success');
+        showGoldEffect(-gameState.rockPaperScissorsExtensionPrice, "RPS Unlocked!");
+        playSound('purchase');
+        
+        // Add RPS button to UI
+        addRPSButton();
+        
+        // Update shop item
+        updateRPSShopItem();
+    } else {
+        showNotification(`Not enough gold! Need ${gameState.rockPaperScissorsExtensionPrice} gold to unlock RPS Battle.`, 'error');
+    }
+}
+
+function addRPSButton() {
+    const rpsBtn = document.getElementById('rps-btn');
+    const mobileRpsBtn = document.getElementById('mobile-rps-btn');
+    
+    if (rpsBtn) rpsBtn.style.display = 'inline-flex';
+    if (mobileRpsBtn) mobileRpsBtn.style.display = 'flex';
+}
+
+function updateRPSShopItem() {
+    const rpsItem = document.getElementById('rps-extension-item');
+    if (rpsItem) {
+        rpsItem.innerHTML = `
+            <div class="shop-item-icon">
+                <i class="fas fa-fist-raised"></i>
+            </div>
+            <div class="shop-item-title">Rock Paper Scissors Battle</div>
+            <div class="shop-item-description">
+                Already Unlocked! Challenge powerful bosses!
+            </div>
+            <button class="shop-item-action equip" onclick="startBossBattleChallenge()">
+                Play Now
+            </button>
+        `;
+    }
+}
+
+function initializeRPSSystem() {
+    if (gameState.rockPaperScissorsUnlocked) {
+        addRPSButton();
+        updateRPSShopItem();
+    }
+}
+
+function startBossBattleChallenge() {
+    if (!gameState.rockPaperScissorsUnlocked) {
+        showNotification('You need to unlock Rock Paper Scissors Battle first!', 'error');
+        return;
+    }
+    
+    if (gameState.bossBattleActive) {
+        showNotification('Boss battle is already active!', 'info');
+        return;
+    }
+    
+    gameState.bossBattleActive = true;
+    gameState.rpsGameActive = false;
+    gameState.rpsLives = 3;
+    gameState.bossConsecutiveWins = 0;
+    
+    // Select a random boss
+    const randomBoss = getRandomBoss();
+    gameState.currentBoss = randomBoss;
+    
+    showBossChallengeModal(randomBoss);
+    playSound('click');
+}
+
+function getRandomBoss() {
+    const totalChance = bossTypes.reduce((sum, boss) => sum + boss.chance, 0);
+    let random = Math.random() * totalChance;
+    
+    for (const boss of bossTypes) {
+        if (random < boss.chance) {
+            return boss;
+        }
+        random -= boss.chance;
+    }
+    
+    return bossTypes[0];
+}
+
+function showBossChallengeModal(boss) {
+    const modal = document.createElement('div');
+    modal.className = 'hint-modal';
+    modal.id = 'boss-challenge-modal';
+    modal.style.display = 'flex';
+    
+    const bossColor = getBossColor(boss.rarity);
+    
+    modal.innerHTML = `
+        <div class="hint-content">
+            <h3 style="color: ${bossColor};">⚔️ BOSS CHALLENGE ⚔️</h3>
+            <div class="boss-info" style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 4rem; color: ${bossColor}; margin-bottom: 10px;">
+                    ${getBossIcon(boss.id)}
+                </div>
+                <h4 style="color: ${bossColor};">${boss.name}</h4>
+                <p style="color: var(--text-muted); margin: 10px 0;">
+                    <strong>Rarity:</strong> ${boss.rarity.toUpperCase()}
+                </p>
+                <p style="color: var(--text-muted); margin: 10px 0;">
+                    <strong>Ability:</strong> ${boss.ability}
+                </p>
+                <p style="color: var(--text-muted); margin: 10px 0;">
+                    <strong>Reward:</strong> ${boss.reward.name}
+                </p>
+                <div class="rps-lives-display" style="margin: 20px auto; display: inline-flex;">
+                    <i class="fas fa-heart"></i> Lives: <span id="boss-challenge-lives">${gameState.rpsLives}</span>
+                </div>
+            </div>
+            <p style="color: var(--text-muted); text-align: center; margin: 20px 0;">
+                Defeat the boss in Rock Paper Scissors! You have 3 lives. Each round lasts 5 seconds.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button class="welcome-btn" id="accept-boss-challenge-btn" style="background: linear-gradient(to right, #51cf66, #40c057);">
+                    <i class="fas fa-check"></i> Accept Challenge
+                </button>
+                <button class="welcome-btn" id="decline-boss-challenge-btn" style="background: linear-gradient(to right, #555, #666);">
+                    <i class="fas fa-times"></i> Decline
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('accept-boss-challenge-btn').addEventListener('click', function() {
+        modal.remove();
+        startRPSGame();
+    });
+    
+    document.getElementById('decline-boss-challenge-btn').addEventListener('click', function() {
+        modal.remove();
+        gameState.bossBattleActive = false;
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            modal.remove();
+            gameState.bossBattleActive = false;
+        }
+    });
+}
+
+function getBossColor(rarity) {
+    switch(rarity) {
+        case 'cosmic': return '#8a2be2';
+        case 'legendary': return '#FFD700';
+        case 'epic': return '#cc5de8';
+        case 'rare': return '#4dabf7';
+        default: return '#495057';
+    }
+}
+
+function getBossIcon(bossId) {
+    switch(bossId) {
+        case 'cosmic_god': return '👑';
+        case 'space_robot': return '🤖';
+        case 'space_ghost': return '👻';
+        case 'underworld_entity': return '👹';
+        case 'skeleton_nigga': return '💀';
+        case 'otensahorse': return '🐴';
+        default: return '👾';
+    }
+}
+
+function startRPSGame() {
+    gameState.rpsGameActive = true;
+    gameState.playerRPSChoice = null;
+    gameState.bossRPSChoice = null;
+    gameState.rpsTimer = 5;
+    
+    const modal = document.createElement('div');
+    modal.className = 'hint-modal';
+    modal.id = 'rps-game-modal';
+    modal.style.display = 'flex';
+    
+    const boss = gameState.currentBoss;
+    const bossColor = getBossColor(boss.rarity);
+    
+    modal.innerHTML = `
+        <div class="hint-content">
+            <div class="boss-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="text-align: left;">
+                    <div style="font-size: 2.5rem; color: ${bossColor};">${getBossIcon(boss.id)}</div>
+                    <h4 style="color: ${bossColor}; margin: 5px 0;">${boss.name}</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">${boss.rarity.toUpperCase()}</p>
+                </div>
+                <div class="rps-lives-display">
+                    <i class="fas fa-heart"></i> Lives: <span id="rps-lives-display">${gameState.rpsLives}</span>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 2.5rem;">🤵</div>
+                    <h4 style="color: var(--theme-primary); margin: 5px 0;">${gameState.playerName || 'Player'}</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">${getEquippedPetIcon()}</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 3rem; color: var(--theme-primary);" id="rps-timer-display">${gameState.rpsTimer}</div>
+                <p style="color: var(--text-muted); margin-top: 10px;">Choose within 5 seconds!</p>
+            </div>
+            
+            <div style="display: flex; justify-content: center; gap: 15px; margin: 20px 0;" id="rps-choices-container">
+                <button class="rps-choice-btn" onclick="selectRPSChoice('rock')" style="background: linear-gradient(to right, #ff6b6b, #ff8787);">
+                    <div class="rps-emoji">✊</div>
+                    <div>Rock</div>
+                </button>
+                <button class="rps-choice-btn" onclick="selectRPSChoice('paper')" style="background: linear-gradient(to right, #4dabf7, #74c0fc);">
+                    <div class="rps-emoji">✋</div>
+                    <div>Paper</div>
+                </button>
+                <button class="rps-choice-btn" onclick="selectRPSChoice('scissors')" style="background: linear-gradient(to right, #51cf66, #69db7c);">
+                    <div class="rps-emoji">✌️</div>
+                    <div>Scissors</div>
+                </button>
+            </div>
+            
+            <div id="rps-result" style="display: none; text-align: center; margin: 20px 0;">
+                <div style="display: flex; justify-content: center; gap: 30px; margin: 20px 0;">
+                    <div>
+                        <div style="font-size: 3rem;" id="player-choice-emoji"></div>
+                        <p style="color: var(--theme-primary);">You</p>
+                    </div>
+                    <div style="font-size: 3rem; display: flex; align-items: center;">VS</div>
+                    <div>
+                        <div style="font-size: 3rem;" id="boss-choice-emoji"></div>
+                        <p style="color: ${bossColor};">${boss.name}</p>
+                    </div>
+                </div>
+                <h3 id="rps-result-text" style="margin: 10px 0;"></h3>
+                <p id="rps-result-message" style="color: var(--text-muted);"></p>
+            </div>
+            
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                <button class="welcome-btn" id="next-rps-round-btn" style="display: none; background: linear-gradient(to right, #4dabf7, #339af0);">
+                    <i class="fas fa-forward"></i> Next Round
+                </button>
+                <button class="welcome-btn" id="exit-rps-game-btn" style="background: linear-gradient(to right, #555, #666);">
+                    <i class="fas fa-times"></i> Exit Battle
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Start timer
+    gameState.rpsTimerInterval = setInterval(updateRPSTimer, 1000);
+    
+    // Setup event listeners
+    document.getElementById('next-rps-round-btn').addEventListener('click', nextRPSRound);
+    document.getElementById('exit-rps-game-btn').addEventListener('click', function() {
+        clearInterval(gameState.rpsTimerInterval);
+        modal.remove();
+        gameState.rpsGameActive = false;
+        gameState.bossBattleActive = false;
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            clearInterval(gameState.rpsTimerInterval);
+            modal.remove();
+            gameState.rpsGameActive = false;
+            gameState.bossBattleActive = false;
+        }
+    });
+}
+
+function updateRPSTimer() {
+    if (!gameState.rpsGameActive) return;
+    
+    gameState.rpsTimer--;
+    const timerDisplay = document.getElementById('rps-timer-display');
+    
+    if (timerDisplay) {
+        timerDisplay.textContent = gameState.rpsTimer;
+        
+        if (gameState.rpsTimer <= 0) {
+            clearInterval(gameState.rpsTimerInterval);
+            handleRPSTimeout();
+        } else if (gameState.rpsTimer <= 3) {
+            timerDisplay.style.color = '#ff6b6b';
+            timerDisplay.style.animation = 'rpsTimerPulse 0.5s infinite';
+        }
+    }
+}
+
+function handleRPSTimeout() {
+    if (!gameState.playerRPSChoice) {
+        // Player didn't choose in time
+        gameState.rpsLives--;
+        gameState.bossConsecutiveWins++;
+        
+        updateRPSLivesDisplay();
+        
+        const resultContainer = document.getElementById('rps-result');
+        const choicesContainer = document.getElementById('rps-choices-container');
+        
+        if (resultContainer && choicesContainer) {
+            choicesContainer.style.display = 'none';
+            resultContainer.style.display = 'block';
+            
+            document.getElementById('player-choice-emoji').textContent = '⏰';
+            document.getElementById('boss-choice-emoji').textContent = getBossIcon(gameState.currentBoss.id);
+            document.getElementById('rps-result-text').textContent = 'TIME OUT!';
+            document.getElementById('rps-result-text').style.color = '#ff6b6b';
+            document.getElementById('rps-result-message').textContent = 'You took too long to choose! Boss wins by default.';
+            
+            // Apply boss ability effect
+            applyBossAbility();
+            
+            // Check if game over
+            if (gameState.rpsLives <= 0) {
+                showRPSGameOver(false);
+            } else {
+                document.getElementById('next-rps-round-btn').style.display = 'inline-flex';
+            }
+        }
+    }
+}
+
+function selectRPSChoice(choice) {
+    if (!gameState.rpsGameActive || gameState.playerRPSChoice) return;
+    
+    gameState.playerRPSChoice = choice;
+    clearInterval(gameState.rpsTimerInterval);
+    
+    // Update button styles
+    const buttons = document.querySelectorAll('.rps-choice-btn');
+    buttons.forEach(btn => {
+        btn.style.opacity = '0.5';
+        btn.disabled = true;
+    });
+    
+    const selectedBtn = document.querySelector(`.rps-choice-btn[onclick*="${choice}"]`);
+    if (selectedBtn) {
+        selectedBtn.style.boxShadow = '0 0 20px currentColor';
+        selectedBtn.style.transform = 'scale(1.1)';
+    }
+    
+    // Generate boss choice
+    generateBossRPSChoice();
+}
+
+function generateBossRPSChoice() {
+    const boss = gameState.currentBoss;
+    const choices = ['rock', 'paper', 'scissors'];
+    
+    // Boss has advantage based on rarity
+    let bossWinChance = 0.5; // Default 50%
+    
+    if (boss.winChance) {
+        bossWinChance = boss.winChance;
+    } else {
+        switch(boss.rarity) {
+            case 'cosmic': bossWinChance = 0.7; break;
+            case 'legendary': bossWinChance = 0.6; break;
+            case 'epic': bossWinChance = 0.55; break;
+            case 'rare': bossWinChance = 0.5; break;
+            default: bossWinChance = 0.5;
+        }
+    }
+    
+    // Check if player has cosmic god pet for advantage
+    if (gameState.equippedPet === 'cosmic_god_pet') {
+        bossWinChance = 0.01; // 99% player win chance with cosmic god pet
+    }
+    
+    // Calculate boss choice
+    if (Math.random() < bossWinChance) {
+        // Boss tries to win
+        gameState.bossRPSChoice = getWinningChoiceAgainst(gameState.playerRPSChoice);
+    } else {
+        // Boss chooses randomly
+        gameState.bossRPSChoice = choices[Math.floor(Math.random() * 3)];
+    }
+    
+    setTimeout(showRPSResult, 1000);
+}
+
+function getWinningChoiceAgainst(choice) {
+    switch(choice) {
+        case 'rock': return 'paper';
+        case 'paper': return 'scissors';
+        case 'scissors': return 'rock';
+        default: return 'rock';
+    }
+}
+
+function showRPSResult() {
+    const resultContainer = document.getElementById('rps-result');
+    const choicesContainer = document.getElementById('rps-choices-container');
+    
+    if (!resultContainer || !choicesContainer) return;
+    
+    choicesContainer.style.display = 'none';
+    resultContainer.style.display = 'block';
+    
+    const playerChoice = gameState.playerRPSChoice;
+    const bossChoice = gameState.bossRPSChoice;
+    
+    // Update emojis
+    document.getElementById('player-choice-emoji').textContent = getRPSChoiceEmoji(playerChoice);
+    document.getElementById('boss-choice-emoji').textContent = getRPSChoiceEmoji(bossChoice);
+    
+    // Determine winner
+    const result = determineRPSWinner(playerChoice, bossChoice);
+    
+    const resultText = document.getElementById('rps-result-text');
+    const resultMessage = document.getElementById('rps-result-message');
+    
+    if (result === 'win') {
+        resultText.textContent = 'VICTORY!';
+        resultText.style.color = '#51cf66';
+        resultMessage.textContent = `You defeated ${gameState.currentBoss.name}!`;
+        
+        gameState.bossConsecutiveWins = 0;
+        giveRPSReward();
+        
+    } else if (result === 'lose') {
+        resultText.textContent = 'DEFEAT!';
+        resultText.style.color = '#ff6b6b';
+        resultMessage.textContent = `${gameState.currentBoss.name} defeated you!`;
+        
+        gameState.rpsLives--;
+        gameState.bossConsecutiveWins++;
+        
+        // Apply boss ability effect
+        applyBossAbility();
+        
+    } else {
+        resultText.textContent = 'DRAW!';
+        resultText.style.color = '#ffd43b';
+        resultMessage.textContent = 'It\'s a tie! No one wins this round.';
+    }
+    
+    updateRPSLivesDisplay();
+    
+    // Check if game over
+    if (gameState.rpsLives <= 0) {
+        showRPSGameOver(false);
+    } else if (result === 'win') {
+        showRPSGameOver(true); // Player won the battle
+    } else {
+        document.getElementById('next-rps-round-btn').style.display = 'inline-flex';
+    }
+}
+
+function getRPSChoiceEmoji(choice) {
+    switch(choice) {
+        case 'rock': return '✊';
+        case 'paper': return '✋';
+        case 'scissors': return '✌️';
+        default: return '❓';
+    }
+}
+
+function determineRPSWinner(player, boss) {
+    if (player === boss) return 'draw';
+    
+    if (
+        (player === 'rock' && boss === 'scissors') ||
+        (player === 'paper' && boss === 'rock') ||
+        (player === 'scissors' && boss === 'paper')
+    ) {
+        return 'win';
+    }
+    
+    return 'lose';
+}
+
+function applyBossAbility() {
+    const boss = gameState.currentBoss;
+    
+    if (boss.abilityEffect) {
+        const effect = boss.abilityEffect(gameState.bossConsecutiveWins);
+        
+        if (effect.message) {
+            showNotification(effect.message, 'error');
+        }
+        
+        if (effect.resetStats) {
+            resetRPSStats();
+        }
+        
+        // Special handling for cosmic god
+        if (boss.id === 'cosmic_god' && gameState.rpsLives <= 0) {
+            const stolenGold = gameState.gold;
+            const stolenDiamonds = gameState.diamonds;
+            gameState.gold = 0;
+            gameState.diamonds = 0;
+            
+            showNotification(`Cosmic God stole ${stolenGold} gold and ${stolenDiamonds.toFixed(2)} diamonds!`, 'error');
+            updateDisplays();
+            saveGameState();
+        }
+    }
+}
+
+function resetRPSStats() {
+    // Reset some game stats on cosmic god defeat
+    gameState.score = 0;
+    gameState.streak = 0;
+    gameState.level = 1;
+    updateDisplays();
+    showNotification('Cosmic God reset your stats!', 'error');
+}
+
+function updateRPSLivesDisplay() {
+    const livesDisplay = document.getElementById('rps-lives-display');
+    const bossLivesDisplay = document.getElementById('boss-challenge-lives');
+    
+    if (livesDisplay) livesDisplay.textContent = gameState.rpsLives;
+    if (bossLivesDisplay) bossLivesDisplay.textContent = gameState.rpsLives;
+}
+
+function nextRPSRound() {
+    gameState.playerRPSChoice = null;
+    gameState.bossRPSChoice = null;
+    gameState.rpsTimer = 5;
+    
+    const resultContainer = document.getElementById('rps-result');
+    const choicesContainer = document.getElementById('rps-choices-container');
+    const nextRoundBtn = document.getElementById('next-rps-round-btn');
+    const timerDisplay = document.getElementById('rps-timer-display');
+    
+    if (resultContainer && choicesContainer && nextRoundBtn && timerDisplay) {
+        resultContainer.style.display = 'none';
+        choicesContainer.style.display = 'flex';
+        nextRoundBtn.style.display = 'none';
+        timerDisplay.textContent = gameState.rpsTimer;
+        timerDisplay.style.color = 'var(--theme-primary)';
+        timerDisplay.style.animation = '';
+        
+        // Reset button styles
+        const buttons = document.querySelectorAll('.rps-choice-btn');
+        buttons.forEach(btn => {
+            btn.style.opacity = '1';
+            btn.disabled = false;
+            btn.style.boxShadow = '';
+            btn.style.transform = '';
+        });
+    }
+    
+    // Restart timer
+    clearInterval(gameState.rpsTimerInterval);
+    gameState.rpsTimerInterval = setInterval(updateRPSTimer, 1000);
+}
+
+function giveRPSReward() {
+    const boss = gameState.currentBoss;
+    
+    if (boss.reward) {
+        switch(boss.reward.type) {
+            case 'gold':
+                let goldAmount = boss.reward.amount;
+                if (typeof goldAmount === 'function') {
+                    goldAmount = goldAmount();
+                }
+                gameState.gold += goldAmount;
+                gameState.totalGoldEarned += goldAmount;
+                showGoldEffect(goldAmount, "Boss Reward!");
+                showNotification(`Victory Reward: +${goldAmount} Gold!`, 'success');
+                break;
+                
+            case 'diamonds':
+                gameState.diamonds += boss.reward.amount;
+                showDiamondEffect(boss.reward.amount);
+                showNotification(`Victory Reward: +${boss.reward.amount} Diamonds!`, 'success');
+                break;
+                
+            case 'pet':
+                if (!gameState.purchasedItems.includes(boss.reward.petId)) {
+                    gameState.purchasedItems.push(boss.reward.petId);
+                    gameState.totalPets++;
+                    showNotification(`Victory Reward: ${boss.reward.name} unlocked!`, 'success');
+                } else {
+                    gameState.gold += 100000;
+                    showGoldEffect(100000, "Duplicate Pet!");
+                    showNotification(`Already have ${boss.reward.name}! Converted to 100,000 gold!`, 'info');
+                }
+                break;
+                
+            case 'random':
+                if (boss.reward.items && boss.reward.items.length > 0) {
+                    const randomItem = boss.reward.items[Math.floor(Math.random() * boss.reward.items.length)];
+                    switch(randomItem.type) {
+                        case 'gold':
+                            gameState.gold += randomItem.amount;
+                            showGoldEffect(randomItem.amount, "Random Reward!");
+                            showNotification(`Victory Reward: +${randomItem.amount} Gold!`, 'success');
+                            break;
+                        case 'diamonds':
+                            gameState.diamonds += randomItem.amount;
+                            showDiamondEffect(randomItem.amount);
+                            showNotification(`Victory Reward: +${randomItem.amount} Diamonds!`, 'success');
+                            break;
+                        case 'life':
+                            gameState.rpsLives = Math.min(3, gameState.rpsLives + randomItem.amount);
+                            updateRPSLivesDisplay();
+                            showNotification(`Victory Reward: +${randomItem.amount} Life!`, 'success');
+                            break;
+                    }
+                }
+                break;
+        }
+        
+        updateDisplays();
+        saveGameState();
+    }
+}
+
+function showRPSGameOver(isVictory) {
+    clearInterval(gameState.rpsTimerInterval);
+    
+    const modal = document.createElement('div');
+    modal.className = `hint-modal ${isVictory ? 'rps-victory-screen' : 'rps-loss-screen'}`;
+    modal.id = 'rps-game-over-modal';
+    modal.style.display = 'flex';
+    
+    const boss = gameState.currentBoss;
+    const bossColor = getBossColor(boss.rarity);
+    
+    modal.innerHTML = `
+        <div class="hint-content">
+            <h3 style="color: ${isVictory ? '#51cf66' : '#ff6b6b'};">
+                ${isVictory ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀'}
+            </h3>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 5rem; color: ${isVictory ? '#51cf66' : '#ff6b6b'};">
+                    ${isVictory ? '🏆' : '💀'}
+                </div>
+                <h4 style="color: ${bossColor}; margin: 10px 0;">${boss.name}</h4>
+                <p style="color: var(--text-muted); margin: 10px 0;">
+                    ${isVictory ? 'You have defeated the boss!' : 'The boss has defeated you!'}
+                </p>
+            </div>
+            
+            ${isVictory ? `
+            <div style="background: rgba(81, 207, 102, 0.1); padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <p style="color: #51cf66; margin: 5px 0;"><strong>Reward:</strong> ${boss.reward.name}</p>
+                <p style="color: var(--text-muted); margin: 5px 0; font-size: 0.9rem;">${boss.reward.description || 'Claim your reward!'}</p>
+            </div>
+            ` : ''}
+            
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                <button class="welcome-btn" id="rps-play-again-btn" style="background: linear-gradient(to right, ${isVictory ? '#51cf66' : '#4dabf7'}, ${isVictory ? '#40c057' : '#339af0'});">
+                    <i class="fas fa-redo"></i> ${isVictory ? 'Challenge Another Boss' : 'Try Again'}
+                </button>
+                <button class="welcome-btn" id="rps-exit-btn" style="background: linear-gradient(to right, #555, #666);">
+                    <i class="fas fa-home"></i> Return to Game
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modals
+    const existingModal = document.getElementById('rps-game-modal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('rps-play-again-btn').addEventListener('click', function() {
+        modal.remove();
+        gameState.rpsGameActive = false;
+        gameState.bossBattleActive = false;
+        setTimeout(startBossBattleChallenge, 500);
+    });
+    
+    document.getElementById('rps-exit-btn').addEventListener('click', function() {
+        modal.remove();
+        gameState.rpsGameActive = false;
+        gameState.bossBattleActive = false;
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            modal.remove();
+            gameState.rpsGameActive = false;
+            gameState.bossBattleActive = false;
+        }
+    });
+    
+    if (isVictory) {
+        playSound('levelup');
+    } else {
+        playSound('gameover');
+    }
+}
+
+function getEquippedPetIcon() {
+    const pet = shopItems.pets.find(p => p.id === gameState.equippedPet);
+    return pet && pet.id !== 'none' ? pet.name : 'No Pet';
+}
+
+// ====== GAME INITIALIZATION COMPLETION ======
 function initializeAllSystems() {
     setupKeyboardShortcuts();
-    setupTooltips();
     setupErrorHandling();
     startAutoSave();
-    updateSessionStats();
     optimizePerformance();
-    
-    // Check for daily reward on game start
-    setTimeout(() => {
-        checkDailyReward();
-    }, 2000);
 }
 
 // ====== FINAL INITIALIZATION ======
 // Call this at the end of DOMContentLoaded
-function finalInitialization() {
-    // Start all systems
-    initializeAllSystems();
-    
-    // Show welcome message if returning player
-    if (gameState.playerName && gameState.totalGames > 0) {
-        setTimeout(() => {
-            const sessionStats = getSessionStats();
-            showNotification(`Welcome back, ${gameState.playerName}! You've played ${gameState.totalGames} games.`, 'info');
-        }, 1000);
+function completeInitialization() {
+    // Apply pet effects on load
+    if (gameState.equippedPet === 'music_dragon' && gameState.musicEnabled) {
+        startBackgroundMusic();
     }
     
-    // Check achievements
+    if (gameState.equippedPet === 'lucky_cat' && gameState.gameActive) {
+        startLuckyCatPassiveGold();
+    }
+    
+    updatePetEffectDisplays();
+    createPetThemeEffects();
+    applyAvatarAuraEffects();
+    
+    // Initialize achievements
     const achievements = checkAchievements();
     if (achievements.length > 0) {
-        setTimeout(() => {
-            showNotification(`You have ${achievements.length} achievements unlocked!`, 'success');
-        }, 1500);
+        console.log('Unlocked achievements:', achievements);
     }
 }
 
-// ====== EXPORT GLOBAL FUNCTIONS ======
-// Make sure all needed functions are available globally
-window.usePowerUp = usePowerUp;
-window.useTimeRewind = useTimeRewind;
-window.buyMysteryBox = buyMysteryBox;
-window.buyPermanentPowerUp = buyPermanentPowerUp;
-window.buyExtension = buyExtension;
-window.buyTheme = buyTheme;
-window.claimRedeemPet = claimRedeemPet;
-window.buyItem = buyItem;
-window.equipItem = equipItem;
-window.showPetsGallery = showPetsGallery;
-window.exportGameData = exportGameData;
-window.importGameData = importGameData;
-
-// ====== START THE GAME ======
-// Update the DOMContentLoaded event to include final initialization
+// Add this to the end of your DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function() {
     // ... existing initialization code ...
     
-    // At the end, call:
-    finalInitialization();
+    // Add this line at the end
+    setTimeout(completeInitialization, 100);
 });
+
+// ====== EXPORT/IMPORT BUTTONS ======
+// Make sure these buttons are accessible in your HTML
+document.getElementById('export-btn')?.addEventListener('click', exportGameData);
+document.getElementById('import-btn')?.addEventListener('click', importGameData);
+document.getElementById('reset-btn')?.addEventListener('click', resetGame);
